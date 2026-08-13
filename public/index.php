@@ -1,22 +1,7 @@
 <?php
-// Bagian Pemrosesan Data (Hanya berjalan jika form diserahkan)
-$submitted_data = null;
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // Kumpulkan dan sanitasi data (contoh dasar)
-    // Dalam aplikasi nyata, gunakan sanitasi yang lebih ketat dan simpan ke database.
-    $submitted_data = $_POST;
-    
-    // Trik untuk menampilkan data yang dikirim dengan rapi (untuk keperluan demo)
-    echo "<div style='background-color: #d4edda; color: #155724; padding: 15px; border: 1px solid #c3e6cb; border-radius: 5px; margin: 20px auto; max-width: 800px;'>";
-    echo "<h3>Formulir Berhasil Dikirim (Contoh Data yang Diterima):</h3>";
-    echo "<pre>";
-    // Menggunakan print_r untuk menampilkan array POST agar mudah dibaca
-    print_r($submitted_data);
-    echo "</pre>";
-    echo "</div>";
-    
-    // Anda bisa menghentikan eksekusi di sini jika hanya ingin melihat data yang dikirim
-    // exit; 
+session_start();
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 ?>
 
@@ -243,8 +228,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <body>
 
 <div class="form-container">
-    <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="POST">
-        
+    <form id="consentForm">
+        <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
         <div class="header">
             <h1>SIAH AH CHEOK CHINESE SIN-SEH CLINIC</h1>
             <h2>谢存灼中医诊所</h2>
@@ -480,14 +465,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
     if (canvasPatient) {
         signaturePadPatient = new SignaturePad(canvasPatient, {
-            backgroundColor: 'rgba(255, 255, 255, 0)',
+            backgroundColor: 'rgb(255, 255, 255)',
             penColor: 'rgb(0, 0, 0)'
         });
     }
 
     if (canvasPractitioner) {
         signaturePadPractitioner = new SignaturePad(canvasPractitioner, {
-            backgroundColor: 'rgba(255, 255, 255, 0)',
+            backgroundColor: 'rgb(255, 255, 255)',
             penColor: 'rgb(0, 0, 0)'
         });
     }
@@ -526,27 +511,98 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     }
     
-    // Save signature data before submit
-    document.querySelector('form').addEventListener('submit', function(e) {
+    // Save signature data and validate before submit
+    document.getElementById('consentForm').addEventListener('submit', function(e) {
+        e.preventDefault(); // Prevent default form submission
         let hasError = false;
-        
+        let errorMessage = '';
+
+        // 1. Signature validation
         if (signaturePadPatient && !signaturePadPatient.isEmpty()) {
             document.getElementById('patient_signature_data').value = signaturePadPatient.toDataURL('image/png');
         } else {
-            alert('Please provide patient signature. 请提供病人签名。');
+            errorMessage += '- Please provide patient signature. 请提供病人签名。\n';
             hasError = true;
         }
 
         if (signaturePadPractitioner && !signaturePadPractitioner.isEmpty()) {
             document.getElementById('practitioner_signature_data').value = signaturePadPractitioner.toDataURL('image/png');
         } else {
-            alert('Please provide practitioner signature. 请提供医师签名。');
+            errorMessage += '- Please provide practitioner signature. 请提供医师签名。\n';
             hasError = true;
         }
 
-        if (hasError) {
-            e.preventDefault();
+        // 2. Age / Guardian validation
+        const dobInput = document.getElementById('patient_dob').value;
+        if (dobInput) {
+            const dob = new Date(dobInput);
+            const today = new Date();
+            let age = today.getFullYear() - dob.getFullYear();
+            const m = today.getMonth() - dob.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+                age--;
+            }
+            if (age < 21) {
+                const nokName = document.getElementById('nok_name').value.trim();
+                const nokNric = document.getElementById('nok_nric').value.trim();
+                const nokRel = document.getElementById('nok_relationship').value.trim();
+                if (!nokName || !nokNric || !nokRel) {
+                    errorMessage += '- Patient is under 21. Guardian details are mandatory. 21岁以下患者必须填写监护人资料。\n';
+                    hasError = true;
+                }
+            }
         }
+
+        // 3. Medical History Specification validation
+        const validateSpec = (radioName, specName, label) => {
+            const yesRadio = document.querySelector(`input[name="history[${radioName}]"][value="Yes"]`);
+            if (yesRadio && yesRadio.checked) {
+                const specInput = document.querySelector(`input[name="${specName}"]`);
+                if (specInput && specInput.value.trim() === '') {
+                    errorMessage += `- Please specify details for: ${label}\n`;
+                    hasError = true;
+                }
+            }
+        };
+        validateSpec('cancer', 'cancer_spec', 'Cancer / 癌症');
+        validateSpec('allergies', 'allergies_spec', 'Allergies / 药物过敏');
+        validateSpec('operation', 'operation_spec', 'Operation / 手术');
+
+        if (hasError) {
+            alert("Form Submission Error / 表单提交错误:\n\n" + errorMessage);
+            return;
+        }
+
+        // Prepare data for AJAX
+        const form = document.getElementById('consentForm');
+        const formData = new FormData(form);
+
+        // Submit via AJAX
+        fetch('../api/submit_consent.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.querySelector('.form-container').innerHTML = `
+                    <div style='background-color: #d4edda; color: #155724; padding: 25px; border: 1px solid #c3e6cb; border-radius: 5px; text-align: center;'>
+                        <h2 style='margin-top:0;'>Success! 成功!</h2>
+                        <p>${data.message}</p>
+                        <p>Consent ID: <strong>${data.token}</strong></p>
+                        <div style="margin-top: 20px; display: flex; justify-content: center; gap: 10px;">
+                            <a href="../api/generate_pdf.php?token=${data.token}" target="_blank" style="text-decoration: none; background-color: #0056b3; color: white; padding: 10px 20px; border-radius: 4px; font-weight: bold; border: 1px solid #004494;">Download PDF / 下载 PDF</a>
+                            <button onclick='window.location.reload()' style='padding: 10px 20px; cursor: pointer; background-color: #6c757d; color: white; border: none; border-radius: 4px;'>Start New Form / 新表单</button>
+                        </div>
+                    </div>`;
+            } else {
+                alert("Error from server: " + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert("An error occurred while submitting the form. Please check your connection.");
+        });
     });
 </script>
 

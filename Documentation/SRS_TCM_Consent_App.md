@@ -146,17 +146,17 @@ Setiap kebutuhan diberi ID unik `FR-xx` untuk keperluan traceability ke pengujia
 |---|---|
 | FR-50 | Sistem **harus** menyediakan area tanda tangan berbasis HTML5 Canvas yang mendukung mouse, touchscreen, dan stylus (pointer events). |
 | FR-51 | Sistem **harus** menyediakan tombol "Clear/Hapus" untuk mengulang tanda tangan sebelum submit. |
-| FR-52 | Sistem **harus** menangkap dua tanda tangan terpisah: Pasien/Wali dan Praktisi TCM, yang dapat dilakukan pada waktu/sesi berbeda. |
+| FR-52 | Sistem **harus** menangkap dua tanda tangan terpisah: Pasien/Wali dan Praktisi TCM, yang dilakukan pada satu halaman formulir yang sama. |
 | FR-53 | Sistem **harus** mengonversi tanda tangan menjadi file gambar (PNG) di sisi server dan menyimpan path file-nya di database (bukan menyimpan base64 langsung di kolom database). |
 | FR-54 | Sistem **harus** mencatat metadata setiap tanda tangan: nama penanda tangan, peran (pasien/wali/praktisi), dan timestamp. |
-| FR-55 | Sistem **harus** menyediakan akses bagi praktisi untuk melakukan counter-sign melalui tautan/token unik tanpa perlu mengisi ulang data pasien. |
+| FR-55 | Sistem **harus** memungkinkan praktisi untuk menandatangani form langsung di perangkat yang sama sesaat setelah pasien menyelesaikannya (tanpa link/sesi terpisah). |
 | FR-56 | Sistem **sebaiknya** memvalidasi tipe MIME, ukuran, dan dimensi gambar tanda tangan yang diunggah ke server. |
 
 ### 3.7 Modul Status & Workflow
 
 | ID | Kebutuhan |
 |---|---|
-| FR-60 | Sistem **harus** memiliki status consent yang eksplisit: `draft`, `in_progress`, `awaiting_patient_signature`, `awaiting_practitioner_signature`, `completed` (serta `cancelled`/`expired` bila diperlukan). |
+| FR-60 | Sistem **harus** memiliki status consent yang eksplisit: `draft`, `in_progress`, `completed` (serta `cancelled`/`expired` bila diperlukan). |
 | FR-61 | Sistem **harus** mencegah perubahan status secara tidak berurutan (mis. tidak bisa langsung `completed` tanpa kedua tanda tangan ada). |
 
 ### 3.8 Modul Dokumen (PDF)

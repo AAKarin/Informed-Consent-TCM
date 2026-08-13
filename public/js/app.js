@@ -147,7 +147,7 @@ function initSignaturePad() {
     const canvasPatient = document.getElementById('patientSignaturePad');
     if (canvasPatient) {
         signaturePadPatient = new SignaturePad(canvasPatient, {
-            backgroundColor: 'rgba(255, 255, 255, 0)',
+            backgroundColor: 'rgb(255, 255, 255)',
             penColor: 'rgb(0, 0, 0)'
         });
     }
@@ -157,7 +157,7 @@ function initSignaturePad() {
     const canvasPractitioner = document.getElementById('practitionerSignaturePad');
     if (canvasPractitioner) {
         signaturePadPractitioner = new SignaturePad(canvasPractitioner, {
-            backgroundColor: 'rgba(255, 255, 255, 0)',
+            backgroundColor: 'rgb(255, 255, 255)',
             penColor: 'rgb(0, 0, 0)'
         });
     }

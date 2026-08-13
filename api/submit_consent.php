@@ -31,7 +31,7 @@ try {
     $pdo->beginTransaction();
 
     // 3. Insert into consent_forms
-    $stmt = $pdo->prepare("INSERT INTO consent_forms (id, status, language, consent_version) VALUES (?, 'awaiting_practitioner_signature', ?, ?)");
+    $stmt = $pdo->prepare("INSERT INTO consent_forms (id, status, language, consent_version) VALUES (?, 'completed', ?, ?)");
     $stmt->execute([$consentId, $lang, $consentVersion]);
 
     // 4. Insert into patients
@@ -98,15 +98,39 @@ try {
         throw new Exception("Failed to save signature image.");
     }
 
-    // 8. Insert signature record
+    // 8. Insert patient signature record
     $stmt = $pdo->prepare("INSERT INTO signatures (consent_id, type, image_path, signed_by) VALUES (?, 'patient', ?, ?)");
     $stmt->execute([$consentId, $fileName, $patientName]);
+    
+    // 8.5 Save Practitioner Signature Image
+    $practitionerSignatureData = $_POST['practitioner_signature_data'] ?? '';
+    if (empty($practitionerSignatureData)) {
+        throw new Exception("Practitioner signature is missing.");
+    }
+
+    list($type2, $data2) = explode(';', $practitionerSignatureData);
+    list(, $data2)       = explode(',', $data2);
+    $data2 = base64_decode($data2);
+    
+    if ($data2 === false) {
+        throw new Exception("Invalid practitioner signature data.");
+    }
+
+    $fileName2 = 'sig_' . $consentId . '_practitioner.png';
+    $filePath2 = $sigDir . '/' . $fileName2;
+    if (file_put_contents($filePath2, $data2) === false) {
+        throw new Exception("Failed to save practitioner signature image.");
+    }
+
+    // Insert practitioner signature record
+    $stmt = $pdo->prepare("INSERT INTO signatures (consent_id, type, image_path, signed_by) VALUES (?, 'practitioner', ?, 'TCM Practitioner')");
+    $stmt->execute([$consentId, $fileName2]);
     
 
 
     // 9. Audit log
     $stmt = $pdo->prepare("INSERT INTO audit_logs (consent_id, event) VALUES (?, ?)");
-    $stmt->execute([$consentId, 'Patient submitted consent and signed']);
+    $stmt->execute([$consentId, 'Patient and Practitioner submitted consent and signed']);
 
     $pdo->commit();
 

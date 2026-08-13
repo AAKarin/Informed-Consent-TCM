@@ -1,0 +1,32 @@
+# Vendor / Libraries
+vendor/
+libs/
+
+# Database and Storage
+storage/signatures/*.png
+storage/pdf/*.pdf
+storage/logs/*.log
+storage/consent.db
+*.sqlite
+*.sqlite3
+*.db
+
+# Environment and Secrets
+.env
+.env.local
+
+# Temporary / Testing files
+test.pdf
+scratch/
+cacert.pem
+
+# Composer
+composer.phar
+
+# IDE / OS Files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.log
