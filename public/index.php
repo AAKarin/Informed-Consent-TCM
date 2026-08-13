@@ -9,7 +9,12 @@ if (empty($_SESSION['csrf_token'])) {
 <html lang="zh-Hant-SG">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon.svg">
     <title>TCM Consent Form - Siah Ah Cheok</title>
     <!-- Signature Pad library -->
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
@@ -89,10 +94,17 @@ if (empty($_SESSION['csrf_token'])) {
         input[type="date"],
         input[type="tel"] {
             width: 100%;
-            padding: 6px;
+            padding: 12px;
             border: 1px solid #ccc;
-            border-radius: 3px;
+            border-radius: 6px;
+            font-size: 16px;
             box-sizing: border-box; /* Important for padding */
+            -webkit-appearance: none;
+        }
+        input[type="radio"] {
+            transform: scale(1.4);
+            margin-right: 8px;
+            accent-color: #0056b3;
         }
         .inline-inputs {
             display: flex;
@@ -157,13 +169,15 @@ if (empty($_SESSION['csrf_token'])) {
         }
         .other-conditions {
             width: 100%;
-            height: 60px;
-            padding: 8px;
+            height: 80px;
+            padding: 12px;
             border: 1px solid #ccc;
-            border-radius: 3px;
+            border-radius: 6px;
+            font-size: 16px;
             resize: vertical;
             box-sizing: border-box;
             margin-bottom: 20px;
+            -webkit-appearance: none;
         }
         .signature-section {
             margin-top: 30px;
@@ -203,11 +217,29 @@ if (empty($_SESSION['csrf_token'])) {
         .submit-btn:hover {
             background-color: #004494;
         }
+        .signature-flex {
+            display: flex;
+            gap: 20px;
+            align-items: flex-end;
+        }
+        .sig-pad-col {
+            flex: 2;
+            border-bottom: 1px solid #333;
+            padding-bottom: 5px;
+        }
+        .sig-date-col {
+            flex: 1;
+            border-bottom: 1px solid #333;
+            padding-bottom: 5px;
+            text-align: center;
+        }
         /* Mobile handling */
         @media (max-width: 600px) {
-            .form-container { padding: 20px; }
+            .form-container { padding: 15px; }
             .form-group label { flex: 0 0 100%; max-width: 100%; margin-bottom: 5px; }
             .inline-inputs { flex-direction: column; gap: 10px; }
+            .inline-field { flex-direction: column; align-items: stretch; }
+            .inline-field label { margin-bottom: 5px; margin-right: 0; }
             .medical-history-table, .medical-history-table thead, .medical-history-table tbody, .medical-history-table th, .medical-history-table td, .medical-history-table tr { 
                 display: block; 
             }
@@ -215,13 +247,18 @@ if (empty($_SESSION['csrf_token'])) {
             .medical-history-table tr { border: 1px solid #ccc; margin-bottom: 10px; }
             .medical-history-table td { border: none; border-bottom: 1px solid #eee; position: relative; padding-left: 50%; text-align: left; }
             .medical-history-table td:before { position: absolute; top: 6px; left: 6px; width: 45%; padding-right: 10px; white-space: nowrap; font-weight: bold; }
-            .medical-history-table td.condition-label { width: 100%; font-weight: bold; background: #eee; }
-            .medical-history-table td.condition-label:before { content: "Condition"; }
+            .medical-history-table td.condition-label { width: 100%; font-weight: bold; background: #eee; padding-left: 15px; }
+            .medical-history-table td.condition-label:before { display: none; }
             .medical-history-table td:nth-of-type(2):before { content: "Yes / 有"; }
             .medical-history-table td:nth-of-type(3):before { content: "No / 没有"; }
             .medical-history-table td:nth-of-type(4):before { content: "Unsure / 不确定"; }
             .medical-history-table td input[type="text"] { width: 100%; }
             .signature-section { flex-direction: column; }
+            
+            .signature-flex { flex-direction: column; align-items: stretch; gap: 10px; }
+            .sig-pad-col, .sig-date-col { border-bottom: none; }
+            .sig-pad-col .sig-line, .sig-date-col .sig-line { border-bottom: 1px solid #333; padding-bottom: 5px; }
+            .date-input { margin-top: 10px; border-bottom: 1px solid #ccc !important; padding-bottom: 10px; font-size: 16px !important; }
         }
     </style>
 </head>
@@ -388,9 +425,9 @@ if (empty($_SESSION['csrf_token'])) {
         <!-- Section: Signatures (HTML representation) -->
         <div class="signature-container">
             <div class="signature-box" style="margin-bottom: 30px;">
-                <table style="width: 100%; border-collapse: collapse;">
-                    <tr>
-                        <td style="width: 70%; border-bottom: 1px solid #333; vertical-align: bottom; padding-bottom: 5px; padding-right: 15px;">
+                <div class="signature-flex">
+                    <div class="sig-pad-col">
+                        <div class="sig-line">
                             <div style="border: 1px dashed #ccc; background-color: #f9f9f9; width: 100%; height: 120px; position: relative;">
                                 <canvas id="patientSignaturePad" style="width: 100%; height: 100%; touch-action: none; cursor: crosshair;"></canvas>
                             </div>
@@ -398,30 +435,30 @@ if (empty($_SESSION['csrf_token'])) {
                                 <button type="button" onclick="clearPatientSignature()" style="font-size: 0.8em; padding: 2px 8px; cursor: pointer; background: #eee; border: 1px solid #ccc; border-radius: 3px;">Clear / 清除</button>
                             </div>
                             <input type="hidden" id="patient_signature_data" name="patient_signature_data">
-                        </td>
-                        <td style="width: 30%; border-bottom: 1px solid #333; vertical-align: bottom; padding-bottom: 5px; text-align: center;">
-                            <input type="date" name="patient_signature_date" class="date-input" style="border: none; background: transparent; font-size: 1.1em; text-align: center; width: 100%; outline: none;" required>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding-top: 5px;">
+                        </div>
+                        <div style="padding-top: 5px;">
                             <p style="margin: 0; font-weight: bold;">Signature of Patient / Next of Kin / Guardian*</p>
                             <p style="margin: 0;">病人 / 近亲 / 监护人签名*</p>
                             <p style="margin: 5px 0 0 0; font-size: 0.85em; color: #666;"><i>*Guardian's or Next of Kin's details and signature are mandatory for patient below 21 years of age.</i></p>
                             <p style="margin: 0; font-size: 0.85em; color: #666;"><i>对于 21 岁以下的病人需要近亲或监护人提供签名与个人资料</i></p>
-                        </td>
-                        <td style="padding-top: 5px; text-align: center; vertical-align: top;">
+                        </div>
+                    </div>
+                    <div class="sig-date-col">
+                        <div class="sig-line">
+                            <input type="date" name="patient_signature_date" class="date-input" style="border: none; background: transparent; font-size: 1.1em; text-align: center; width: 100%; outline: none;" required>
+                        </div>
+                        <div style="padding-top: 5px; text-align: center;">
                             <p style="margin: 0; font-weight: bold;">Date</p>
                             <p style="margin: 0;">日期</p>
-                        </td>
-                    </tr>
-                </table>
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <div class="signature-box" style="margin-bottom: 30px;">
-                <table style="width: 100%; border-collapse: collapse;">
-                    <tr>
-                        <td style="width: 70%; border-bottom: 1px solid #333; vertical-align: bottom; padding-bottom: 5px; padding-right: 15px;">
+                <div class="signature-flex">
+                    <div class="sig-pad-col">
+                        <div class="sig-line">
                             <div style="border: 1px dashed #ccc; background-color: #f9f9f9; width: 100%; height: 120px; position: relative;">
                                 <canvas id="practitionerSignaturePad" style="width: 100%; height: 100%; touch-action: none; cursor: crosshair;"></canvas>
                             </div>
@@ -429,22 +466,22 @@ if (empty($_SESSION['csrf_token'])) {
                                 <button type="button" onclick="clearPractitionerSignature()" style="font-size: 0.8em; padding: 2px 8px; cursor: pointer; background: #eee; border: 1px solid #ccc; border-radius: 3px;">Clear / 清除</button>
                             </div>
                             <input type="hidden" id="practitioner_signature_data" name="practitioner_signature_data">
-                        </td>
-                        <td style="width: 30%; border-bottom: 1px solid #333; vertical-align: bottom; padding-bottom: 5px; text-align: center;">
-                            <input type="date" name="practitioner_signature_date" class="date-input" style="border: none; background: transparent; font-size: 1.1em; text-align: center; width: 100%; outline: none;" required>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding-top: 5px;">
+                        </div>
+                        <div style="padding-top: 5px;">
                             <p style="margin: 0; font-weight: bold;">Signature of TCM Practitioner</p>
                             <p style="margin: 0;">医师签名</p>
-                        </td>
-                        <td style="padding-top: 5px; text-align: center; vertical-align: top;">
+                        </div>
+                    </div>
+                    <div class="sig-date-col">
+                        <div class="sig-line">
+                            <input type="date" name="practitioner_signature_date" class="date-input" style="border: none; background: transparent; font-size: 1.1em; text-align: center; width: 100%; outline: none;" required>
+                        </div>
+                        <div style="padding-top: 5px; text-align: center;">
                             <p style="margin: 0; font-weight: bold;">Date</p>
                             <p style="margin: 0;">日期</p>
-                        </td>
-                    </tr>
-                </table>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -604,6 +641,17 @@ if (empty($_SESSION['csrf_token'])) {
             alert("An error occurred while submitting the form. Please check your connection.");
         });
     });
+
+    // Register Service Worker for PWA
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+            navigator.serviceWorker.register('./sw.js').then(function(registration) {
+                console.log('ServiceWorker registration successful with scope: ', registration.scope);
+            }, function(err) {
+                console.log('ServiceWorker registration failed: ', err);
+            });
+        });
+    }
 </script>
 
 </body>
