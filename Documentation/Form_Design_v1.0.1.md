@@ -1,6 +1,6 @@
-# Desain Antarmuka TCM Consent Form v1.0.0
+# Desain Antarmuka TCM Consent Form v1.0.1
 
-**Status Dokumen:** Final (v1.0.0)
+**Status Dokumen:** Final (v1.0.1)
 **Tujuan:** Panduan tata letak (layout) dan desain UI agar penambahan fungsionalitas di masa depan tidak merusak atau merubah tampilan form persetujuan (Informed Consent) TCM.
 
 ---
@@ -40,14 +40,13 @@ Tabel kuesioner medis memiliki desain khusus agar interaktif dan mudah dibaca:
 - *Aturan Desain:* Dilarang merubah struktur tag `<table>`, `<thead>`, dan `<tbody>` karena sangat bergantung pada CSS mobile responsive.
 
 ## 5. Area Tanda Tangan (Signature Pads)
-Formulir menggunakan tata letak Grid 2x2 yang sangat spesifik untuk dua jenis tanda tangan (Pasien/Wali dan Praktisi TCM).
-- **Struktur 2x2:**
-  - Kiri Atas: Area canvas (interaktif) dengan tombol *Clear*.
-  - Kanan Atas: Input tanggal tipe date yang posisinya berada di bawah (*bottom aligned*).
-  - Kiri Bawah: Label teks identitas (Pasien/Praktisi).
-  - Kanan Bawah: Label teks "Date / 日期".
+Formulir menggunakan tata letak berbasis **Flexbox** (`.signature-flex`) agar responsif (stacking pada mobile) dan rapi di desktop.
+- **Struktur Kolom:**
+  - Kolom Kiri (`.sig-pad-col`): Memuat area canvas interaktif dengan tombol *Clear*, dan label teks identitas yang memiliki garis atas (`border-top`).
+  - Kolom Kanan (`.sig-date-col`): Memuat input tanggal (date) dan label teks "Date / 日期" yang memiliki garis atas (`border-top`).
+- **Pemisahan Teks Keterangan:** Teks keterangan wali untuk pasien di bawah umur 21 tahun ditempatkan di luar flex container utama (span full width) agar tidak menumpuk di area tanda tangan, dengan penekanan pada frasa spesifik umur (`<b>`).
 - **Spesifikasi Canvas:** Harus menggunakan library `signature_pad` dan canvas memiliki inline script untuk resizing yang menyesuaikan resolusi pixel (terutama di layar retina/mobile).
-- *Aturan Desain:* Dimensi area tanda tangan tidak boleh lebih kecil dari 120px tingginya. Dilarang merubah struktur tabel (2x2) yang membungkus canvas.
+- *Aturan Desain:* Dimensi area tanda tangan tidak boleh lebih kecil dari 120px tingginya. Dilarang merubah struktur flexbox (`.signature-flex`) yang membungkus elemen-elemen ini agar desain form pada layar mobile tetap berjalan mulus.
 
 ## 6. Tombol Aksi (Submit)
 - Berada di dalam `.submit-container` (rata tengah).
