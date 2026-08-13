@@ -630,11 +630,9 @@ if (empty($_SESSION['csrf_token'])) {
                             <input type="hidden" id="patient_signature_data" name="patient_signature_data">
                         </div>
                         <div style="padding-top: 5px; border-top: 1px solid #333;">
-                            <p style="margin: 0; font-weight: bold;">
-                                <span class="lang-elem lang-en">Signature of Patient / Next of Kin / Guardian*</span>
-                                <span class="lang-elem lang-zh">病人 / 近亲 / 监护人签名*</span>
-                                <span class="lang-elem lang-id">Tanda Tangan Pasien / Keluarga Dekat / Wali*</span>
-                            </p>
+                            <p style="margin: 0; font-weight: bold;" class="lang-elem lang-en">Signature of Patient / Next of Kin / Guardian*</p>
+                            <p style="margin: 0;" class="lang-elem lang-zh">病人 / 近亲 / 监护人签名*</p>
+                            <p style="margin: 0; font-weight: bold;" class="lang-elem lang-id">Tanda Tangan Pasien / Keluarga Dekat / Wali*</p>
                         </div>
                     </div>
                     <div class="sig-date-col">
@@ -642,11 +640,9 @@ if (empty($_SESSION['csrf_token'])) {
                             <input type="date" name="patient_signature_date" class="date-input" style="border: none; background: transparent; font-size: 1.1em; text-align: center; width: 100%; outline: none;" required>
                         </div>
                         <div style="padding-top: 5px; border-top: 1px solid #333; text-align: center;">
-                            <p style="margin: 0; font-weight: bold;">
-                                <span class="lang-elem lang-en">Date</span>
-                                <span class="lang-elem lang-zh">日期</span>
-                                <span class="lang-elem lang-id">Tanggal</span>
-                            </p>
+                            <p style="margin: 0; font-weight: bold;" class="lang-elem lang-en">Date</p>
+                            <p style="margin: 0;" class="lang-elem lang-zh">日期</p>
+                            <p style="margin: 0; font-weight: bold;" class="lang-elem lang-id">Tanggal</p>
                         </div>
                     </div>
                 </div>
@@ -674,11 +670,9 @@ if (empty($_SESSION['csrf_token'])) {
                             <input type="hidden" id="practitioner_signature_data" name="practitioner_signature_data">
                         </div>
                         <div style="padding-top: 5px; border-top: 1px solid #333;">
-                            <p style="margin: 0; font-weight: bold;">
-                                <span class="lang-elem lang-en">Signature of TCM Practitioner</span>
-                                <span class="lang-elem lang-zh">医师签名</span>
-                                <span class="lang-elem lang-id">Tanda Tangan Praktisi TCM</span>
-                            </p>
+                            <p style="margin: 0; font-weight: bold;" class="lang-elem lang-en">Signature of TCM Practitioner</p>
+                            <p style="margin: 0;" class="lang-elem lang-zh">医师签名</p>
+                            <p style="margin: 0; font-weight: bold;" class="lang-elem lang-id">Tanda Tangan Praktisi TCM</p>
                         </div>
                     </div>
                     <div class="sig-date-col">
@@ -686,11 +680,9 @@ if (empty($_SESSION['csrf_token'])) {
                             <input type="date" name="practitioner_signature_date" class="date-input" style="border: none; background: transparent; font-size: 1.1em; text-align: center; width: 100%; outline: none;" required>
                         </div>
                         <div style="padding-top: 5px; border-top: 1px solid #333; text-align: center;">
-                            <p style="margin: 0; font-weight: bold;">
-                                <span class="lang-elem lang-en">Date</span>
-                                <span class="lang-elem lang-zh">日期</span>
-                                <span class="lang-elem lang-id">Tanggal</span>
-                            </p>
+                            <p style="margin: 0; font-weight: bold;" class="lang-elem lang-en">Date</p>
+                            <p style="margin: 0;" class="lang-elem lang-zh">日期</p>
+                            <p style="margin: 0; font-weight: bold;" class="lang-elem lang-id">Tanggal</p>
                         </div>
                     </div>
                 </div>
