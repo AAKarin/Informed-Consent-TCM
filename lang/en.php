@@ -63,7 +63,9 @@ return [
     'consent_read' => '7）I have read, or have had read to me, the above consent. I have also had an opportunity to ask questions about its content, and by signing below I agree to the above-named procedures. I intend this consent form to cover the entire course of treatment for my present condition and for any future condition(s) for which I seek treatment.',
     
     // Signatures
-    'sig_patient' => 'Signature of Patient / Next of Kin / Guardian*',
+    'sig_patient' => 'Signature of Patient',
+    'sig_guardian' => 'Signature of Guardian / Next of Kin',
+    'sig_guardian_desc' => '*Guardian’s or Next of Kin’s details and signature are mandatory for patient below 21 years of age.',
     'sig_practitioner' => 'Signature of TCM Practitioner',
     'sig_date' => 'Date',
 ];

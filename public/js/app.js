@@ -25,6 +25,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 let signaturePadPatient = null;
+let signaturePadGuardian = null;
+let signaturePadPractitioner = null;
 
 function validateForm() {
     const requiredInputs = document.querySelectorAll('input[required], textarea[required]');
@@ -119,11 +121,24 @@ function checkAge() {
         document.getElementById('nok_name').setAttribute('placeholder', '* Required');
         document.getElementById('nok_nric').setAttribute('placeholder', '* Required');
         document.getElementById('nok_relation').setAttribute('placeholder', '* Required');
+        
+        // Show guardian signature
+        const guardianSigContainer = document.getElementById('guardianSignatureContainer');
+        if (guardianSigContainer) {
+            guardianSigContainer.style.display = 'block';
+            resizeCanvas(); // Ensure canvas is sized correctly when shown
+        }
     } else {
         alertBox.style.display = 'none';
         document.getElementById('nok_name').removeAttribute('placeholder');
         document.getElementById('nok_nric').removeAttribute('placeholder');
         document.getElementById('nok_relation').removeAttribute('placeholder');
+        
+        // Hide guardian signature
+        const guardianSigContainer = document.getElementById('guardianSignatureContainer');
+        if (guardianSigContainer) {
+            guardianSigContainer.style.display = 'none';
+        }
     }
 }
 
@@ -143,79 +158,180 @@ function toggleSpecify(key, isYes) {
 // --- Signature Pad Logic ---
 
 function initSignaturePad() {
-    const canvas = document.getElementById('patientSignaturePad');
-    if (!canvas) return;
-    
-    signaturePadPatient = new SignaturePad(canvas, {
-        backgroundColor: 'rgba(255, 255, 255, 0)',
-        penColor: 'rgb(0, 0, 0)'
-    });
+    const canvasPatient = document.getElementById('patientSignaturePad');
+    if (canvasPatient) {
+        signaturePadPatient = new SignaturePad(canvasPatient, {
+            backgroundColor: 'rgba(255, 255, 255, 0)',
+            penColor: 'rgb(0, 0, 0)'
+        });
+    }
+
+    const canvasGuardian = document.getElementById('guardianSignaturePad');
+    if (canvasGuardian) {
+        signaturePadGuardian = new SignaturePad(canvasGuardian, {
+            backgroundColor: 'rgba(255, 255, 255, 0)',
+            penColor: 'rgb(0, 0, 0)'
+        });
+    }
+
+    const canvasPractitioner = document.getElementById('practitionerSignaturePad');
+    if (canvasPractitioner) {
+        signaturePadPractitioner = new SignaturePad(canvasPractitioner, {
+            backgroundColor: 'rgba(255, 255, 255, 0)',
+            penColor: 'rgb(0, 0, 0)'
+        });
+    }
     
     window.addEventListener('resize', resizeCanvas);
 }
 
 function resizeCanvas() {
-    const canvas = document.getElementById('patientSignaturePad');
-    if (!canvas) return;
+    const canvasPatient = document.getElementById('patientSignaturePad');
+    const canvasGuardian = document.getElementById('guardianSignaturePad');
+    const canvasPractitioner = document.getElementById('practitionerSignaturePad');
     
-    // When zoomed out to less than 100%, for some very strange reason,
-    // some browsers report devicePixelRatio as less than 1
-    // and only part of the canvas is cleared then.
     const ratio =  Math.max(window.devicePixelRatio || 1, 1);
-    
-    // This part causes the canvas to be cleared
-    canvas.width = canvas.offsetWidth * ratio;
-    canvas.height = canvas.offsetHeight * ratio;
-    canvas.getContext("2d").scale(ratio, ratio);
-    
-    // This library does not listen for canvas changes, so after the canvas is automatically
-    // cleared by the browser, SignaturePad#clear adds back the background color (if set).
-    if(signaturePadPatient) {
-        signaturePadPatient.clear();
+
+    if (canvasPatient && canvasPatient.offsetParent !== null) {
+        canvasPatient.width = canvasPatient.offsetWidth * ratio;
+        canvasPatient.height = canvasPatient.offsetHeight * ratio;
+        canvasPatient.getContext("2d").scale(ratio, ratio);
+        if(signaturePadPatient) {
+            signaturePadPatient.clear();
+        }
+    }
+
+    if (canvasGuardian && canvasGuardian.offsetParent !== null) {
+        canvasGuardian.width = canvasGuardian.offsetWidth * ratio;
+        canvasGuardian.height = canvasGuardian.offsetHeight * ratio;
+        canvasGuardian.getContext("2d").scale(ratio, ratio);
+        if(signaturePadGuardian) {
+            signaturePadGuardian.clear();
+        }
+    }
+
+    if (canvasPractitioner && canvasPractitioner.offsetParent !== null) {
+        canvasPractitioner.width = canvasPractitioner.offsetWidth * ratio;
+        canvasPractitioner.height = canvasPractitioner.offsetHeight * ratio;
+        canvasPractitioner.getContext("2d").scale(ratio, ratio);
+        if(signaturePadPractitioner) {
+            signaturePadPractitioner.clear();
+        }
     }
 }
 
 function clearSignature(type) {
     if (type === 'patient' && signaturePadPatient) {
         signaturePadPatient.clear();
+    } else if (type === 'guardian' && signaturePadGuardian) {
+        signaturePadGuardian.clear();
+    } else if (type === 'practitioner' && signaturePadPractitioner) {
+        signaturePadPractitioner.clear();
     }
 }
 
-// Form Submission
-document.getElementById('consentForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    if (!validateForm()) return;
-    
-    if (signaturePadPatient.isEmpty()) {
-        alert(i18n.error_signature);
-        return;
-    }
-    
-    // Save signature data as base64 to the hidden input
-    document.getElementById('patient_signature_data').value = signaturePadPatient.toDataURL('image/png');
-    
-    const submitBtn = document.getElementById('btnSubmit');
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = 'Processing...';
-    
-    // Gather form data
-    const formData = new FormData(this);
-    
-    // For now, simulate success (API integration will happen in next phase)
-    setTimeout(() => {
-        alert("Form validated successfully! (Backend API will be connected here)");
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = i18n.lang === 'zh' ? '提交' : 'Submit';
+// Form Submission - Patient
+const consentForm = document.getElementById('consentForm');
+if (consentForm) {
+    consentForm.addEventListener('submit', function(e) {
+        e.preventDefault();
         
-        // Console log for verification
-        console.log("Form Data Entries:");
-        for (let pair of formData.entries()) {
-            if(pair[0] === 'patient_signature_data') {
-                console.log(pair[0] + ': [BASE64_IMAGE_DATA]');
-            } else {
-                console.log(pair[0] + ': ' + pair[1]);
+        if (!validateForm()) return;
+        
+        if (signaturePadPatient.isEmpty()) {
+            alert(i18n.error_signature);
+            return;
+        }
+        document.getElementById('patient_signature_data').value = signaturePadPatient.toDataURL('image/png');
+
+        // Check if guardian signature is required
+        const dobValue = document.getElementById('patient_dob').value;
+        if (dobValue) {
+            const age = calculateAge(new Date(dobValue));
+            if (age < 21) {
+                if (signaturePadGuardian && signaturePadGuardian.isEmpty()) {
+                    alert(i18n.lang === 'zh' ? '请提供监护人的签名。' : 'Please provide the guardian\'s signature.');
+                    return;
+                }
+                document.getElementById('guardian_signature_data').value = signaturePadGuardian.toDataURL('image/png');
             }
         }
-    }, 1000);
-});
+        
+        const submitBtn = document.getElementById('btnSubmit');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = 'Processing...';
+        
+        // Gather form data
+        const formData = new FormData(this);
+        
+        // Add language to form data
+        formData.append('lang', i18n.lang);
+        
+        // Send data to backend API
+        fetch('../api/submit_consent.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(i18n.lang === 'zh' ? '表格提交成功！' : 'Form submitted successfully!');
+                // Redirect to practitioner signing page (for testing/flow purposes)
+                window.location.href = `index.php?token=${data.token}&step=practitioner`;
+            } else {
+                alert((i18n.lang === 'zh' ? '提交失败：' : 'Submission failed: ') + data.message);
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = i18n.lang === 'zh' ? '提交' : 'Submit';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert(i18n.lang === 'zh' ? '发生错误，请重试。' : 'An error occurred. Please try again.');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = i18n.lang === 'zh' ? '提交' : 'Submit';
+        });
+    });
+}
+
+// Form Submission - Practitioner
+const practitionerForm = document.getElementById('practitionerForm');
+if (practitionerForm) {
+    practitionerForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        if (signaturePadPractitioner.isEmpty()) {
+            alert(i18n.lang === 'zh' ? '请提供您的签名。' : 'Please provide your signature.');
+            return;
+        }
+        
+        document.getElementById('practitioner_signature_data').value = signaturePadPractitioner.toDataURL('image/png');
+        
+        const submitBtn = document.getElementById('btnSubmitPractitioner');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = 'Processing...';
+        
+        const formData = new FormData(this);
+        
+        fetch('../api/submit_practitioner.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(i18n.lang === 'zh' ? '完成。' : 'Consent completed successfully!');
+                window.location.reload();
+            } else {
+                alert((i18n.lang === 'zh' ? '提交失败：' : 'Submission failed: ') + data.message);
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = i18n.lang === 'zh' ? '提交' : 'Submit';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert(i18n.lang === 'zh' ? '发生错误，请重试。' : 'An error occurred. Please try again.');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = i18n.lang === 'zh' ? '提交' : 'Submit';
+        });
+    });
+}

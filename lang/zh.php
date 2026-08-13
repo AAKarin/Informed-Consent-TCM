@@ -63,7 +63,9 @@ return [
     'consent_read' => '7）我已阅读或已闻之以上同意书。我有机会向医师提问相关内容，并签署与答应以上所提出的程序。我有意让此同意书涵盖我目前与将来的全程治疗。',
     
     // Signatures
-    'sig_patient' => 'Signature of Patient / Next of Kin / Guardian* 病人 / 近亲 / 监护人签名*',
+    'sig_patient' => 'Signature of Patient 病人签名',
+    'sig_guardian' => 'Signature of Guardian / Next of Kin 近亲 / 监护人签名',
+    'sig_guardian_desc' => '*Guardian’s or Next of Kin’s details and signature are mandatory for patient below 21 years of age. 对于 21 岁以下的病人需要近亲或监护人提供签名与个人资料',
     'sig_practitioner' => 'Signature of TCM Practitioner 医师签名',
     'sig_date' => 'Date 日期',
 ];

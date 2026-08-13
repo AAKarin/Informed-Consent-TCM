@@ -1,6 +1,30 @@
 <?php
 session_start();
 
+$dbPath = __DIR__ . '/../storage/consent.db';
+$step = $_GET['step'] ?? 'patient';
+$token = $_GET['token'] ?? '';
+$consentData = null;
+$patientData = null;
+
+if ($step === 'practitioner' && !empty($token)) {
+    try {
+        $pdo = new PDO("sqlite:" . $dbPath);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $stmt = $pdo->prepare("SELECT * FROM consent_forms WHERE id = ?");
+        $stmt->execute([$token]);
+        $consentData = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($consentData) {
+            $stmt = $pdo->prepare("SELECT * FROM patients WHERE consent_id = ?");
+            $stmt->execute([$token]);
+            $patientData = $stmt->fetch(PDO::FETCH_ASSOC);
+            // Force language to match consent
+            $_SESSION['lang'] = $consentData['language'];
+        }
+    } catch (Exception $e) {}
+}
+
 // Determine language (default to English)
 $lang = isset($_GET['lang']) ? $_GET['lang'] : (isset($_SESSION['lang']) ? $_SESSION['lang'] : 'en');
 if (!in_array($lang, ['en', 'zh'])) {
@@ -58,6 +82,49 @@ $needs_specify = ['cancer', 'allergies', 'operation'];
 
 
 
+        <?php if ($step === 'practitioner' && $consentData): ?>
+            <?php if ($consentData['status'] === 'completed'): ?>
+                <div class="form-section" style="text-align: center;">
+                    <h3 class="section-title">Consent Completed</h3>
+                    <p>This consent form has already been completed.</p>
+                </div>
+            <?php else: ?>
+                <form id="practitionerForm">
+                    <input type="hidden" id="practitioner_token" name="token" value="<?= htmlspecialchars($token) ?>">
+                    
+                    <div class="form-section">
+                        <h3 class="section-title">Practitioner Counter-Sign</h3>
+                        <p><strong>Patient Name:</strong> <?= htmlspecialchars($patientData['name']) ?></p>
+                        <p><strong>NRIC/FIN:</strong> <?= htmlspecialchars($patientData['nric']) ?></p>
+                        
+                        <div class="form-group" style="margin-top: 1.5rem;">
+                            <label for="practitioner_name">Practitioner Name *</label>
+                            <input type="text" id="practitioner_name" name="practitioner_name" required>
+                        </div>
+                        
+                        <div class="signature-container">
+                            <label>Practitioner Signature *</label>
+                            <div class="signature-pad-wrapper">
+                                <canvas id="practitionerSignaturePad"></canvas>
+                            </div>
+                            <div class="signature-actions">
+                                <button type="button" class="btn-clear" onclick="clearSignature('practitioner')"><?= $t['btn_clear'] ?></button>
+                            </div>
+                            <input type="hidden" id="practitioner_signature_data" name="practitioner_signature_data">
+                        </div>
+                        
+                        <div class="form-actions" style="justify-content: flex-end;">
+                            <button type="submit" class="btn btn-primary" id="btnSubmitPractitioner"><?= $t['btn_submit'] ?></button>
+                        </div>
+                    </div>
+                </form>
+            <?php endif; ?>
+        <?php elseif ($step === 'practitioner' && !$consentData): ?>
+            <div class="form-section" style="text-align: center; color: var(--error);">
+                <h3 class="section-title">Error</h3>
+                <p>Invalid or missing consent token.</p>
+            </div>
+        <?php else: ?>
         <form id="consentForm">
             <!-- STEP 1: Patient Information -->
             <div class="form-section">
@@ -204,6 +271,19 @@ $needs_specify = ['cancer', 'allergies', 'operation'];
                     <!-- Hidden input to store signature data -->
                     <input type="hidden" id="patient_signature_data" name="patient_signature_data">
                 </div>
+
+                <div class="signature-container" id="guardianSignatureContainer" style="display: none; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px dashed var(--border-color);">
+                    <p class="help-text" style="color: var(--error); margin-bottom: 0.5rem;"><?= $t['sig_guardian_desc'] ?></p>
+                    <label><?= $t['sig_guardian'] ?> *</label>
+                    <div class="signature-pad-wrapper">
+                        <canvas id="guardianSignaturePad"></canvas>
+                    </div>
+                    <div class="signature-actions">
+                        <button type="button" class="btn-clear" onclick="clearSignature('guardian')"><?= $t['btn_clear'] ?></button>
+                    </div>
+                    <!-- Hidden input to store signature data -->
+                    <input type="hidden" id="guardian_signature_data" name="guardian_signature_data">
+                </div>
                 
                 <!-- Note: Practitioner signature will be handled in a different flow later, as per requirements -->
 
@@ -212,6 +292,7 @@ $needs_specify = ['cancer', 'allergies', 'operation'];
                 </div>
             </div>
         </form>
+        <?php endif; ?>
     </div>
 
     <!-- Pass language configuration to JS -->
