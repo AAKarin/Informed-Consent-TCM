@@ -178,21 +178,24 @@ textarea {
 }
 
 /* Radio & Checkbox */
-.radio-group, .checkbox-group {
+.radio-group,
+.checkbox-group {
     display: flex;
     gap: 1.5rem;
     align-items: center;
     padding: 0.5rem 0;
 }
 
-.radio-item, .checkbox-item {
+.radio-item,
+.checkbox-item {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     cursor: pointer;
 }
 
-.radio-item input, .checkbox-item input {
+.radio-item input,
+.checkbox-item input {
     width: 1.1rem;
     height: 1.1rem;
     cursor: pointer;
@@ -209,7 +212,8 @@ textarea {
     border: 1px solid var(--border-color);
 }
 
-.medical-table th, .medical-table td {
+.medical-table th,
+.medical-table td {
     padding: 0.75rem 1rem;
     border-bottom: 1px solid var(--border-color);
     text-align: left;
@@ -224,22 +228,29 @@ textarea {
     border-bottom: none;
 }
 
-.specify-input {
-    display: none;
-    margin-top: 0.5rem;
-    width: 100%;
-    border-bottom: 1px dashed var(--border-color) !important;
+.specify-input-inline {
+    width: 150px;
+    border-bottom: 1px solid var(--border-color) !important;
     border-top: none !important;
     border-left: none !important;
     border-right: none !important;
     border-radius: 0 !important;
-    padding: 0.2rem 0 !important;
+    padding: 0 0.25rem !important;
     background: transparent !important;
     box-shadow: none !important;
+    color: var(--text-main);
 }
 
-.specify-input:focus {
+.specify-input-inline:focus {
     border-bottom-color: var(--border-focus) !important;
+    outline: none;
+}
+
+.specify-input-inline:disabled {
+    border-bottom: 1px dashed var(--text-muted) !important;
+    background: transparent !important;
+    opacity: 0.7;
+    cursor: not-allowed;
 }
 
 /* Consent Text */
@@ -381,16 +392,17 @@ canvas {
     .app-container {
         padding: 1.5rem;
     }
-    
+
     .form-row {
         flex-direction: column;
         gap: 0;
     }
-    
-    .medical-table th, .medical-table td {
+
+    .medical-table th,
+    .medical-table td {
         padding: 0.5rem;
     }
-    
+
     .radio-group {
         flex-direction: column;
         align-items: flex-start;

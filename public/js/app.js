@@ -25,7 +25,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 let signaturePadPatient = null;
-let signaturePadGuardian = null;
 let signaturePadPractitioner = null;
 
 function validateForm() {
@@ -121,24 +120,11 @@ function checkAge() {
         document.getElementById('nok_name').setAttribute('placeholder', '* Required');
         document.getElementById('nok_nric').setAttribute('placeholder', '* Required');
         document.getElementById('nok_relation').setAttribute('placeholder', '* Required');
-        
-        // Show guardian signature
-        const guardianSigContainer = document.getElementById('guardianSignatureContainer');
-        if (guardianSigContainer) {
-            guardianSigContainer.style.display = 'block';
-            resizeCanvas(); // Ensure canvas is sized correctly when shown
-        }
     } else {
         alertBox.style.display = 'none';
         document.getElementById('nok_name').removeAttribute('placeholder');
         document.getElementById('nok_nric').removeAttribute('placeholder');
         document.getElementById('nok_relation').removeAttribute('placeholder');
-        
-        // Hide guardian signature
-        const guardianSigContainer = document.getElementById('guardianSignatureContainer');
-        if (guardianSigContainer) {
-            guardianSigContainer.style.display = 'none';
-        }
     }
 }
 
@@ -166,13 +152,7 @@ function initSignaturePad() {
         });
     }
 
-    const canvasGuardian = document.getElementById('guardianSignaturePad');
-    if (canvasGuardian) {
-        signaturePadGuardian = new SignaturePad(canvasGuardian, {
-            backgroundColor: 'rgba(255, 255, 255, 0)',
-            penColor: 'rgb(0, 0, 0)'
-        });
-    }
+
 
     const canvasPractitioner = document.getElementById('practitionerSignaturePad');
     if (canvasPractitioner) {
@@ -187,7 +167,6 @@ function initSignaturePad() {
 
 function resizeCanvas() {
     const canvasPatient = document.getElementById('patientSignaturePad');
-    const canvasGuardian = document.getElementById('guardianSignaturePad');
     const canvasPractitioner = document.getElementById('practitionerSignaturePad');
     
     const ratio =  Math.max(window.devicePixelRatio || 1, 1);
@@ -201,14 +180,7 @@ function resizeCanvas() {
         }
     }
 
-    if (canvasGuardian && canvasGuardian.offsetParent !== null) {
-        canvasGuardian.width = canvasGuardian.offsetWidth * ratio;
-        canvasGuardian.height = canvasGuardian.offsetHeight * ratio;
-        canvasGuardian.getContext("2d").scale(ratio, ratio);
-        if(signaturePadGuardian) {
-            signaturePadGuardian.clear();
-        }
-    }
+
 
     if (canvasPractitioner && canvasPractitioner.offsetParent !== null) {
         canvasPractitioner.width = canvasPractitioner.offsetWidth * ratio;
@@ -223,8 +195,6 @@ function resizeCanvas() {
 function clearSignature(type) {
     if (type === 'patient' && signaturePadPatient) {
         signaturePadPatient.clear();
-    } else if (type === 'guardian' && signaturePadGuardian) {
-        signaturePadGuardian.clear();
     } else if (type === 'practitioner' && signaturePadPractitioner) {
         signaturePadPractitioner.clear();
     }
@@ -244,18 +214,7 @@ if (consentForm) {
         }
         document.getElementById('patient_signature_data').value = signaturePadPatient.toDataURL('image/png');
 
-        // Check if guardian signature is required
-        const dobValue = document.getElementById('patient_dob').value;
-        if (dobValue) {
-            const age = calculateAge(new Date(dobValue));
-            if (age < 21) {
-                if (signaturePadGuardian && signaturePadGuardian.isEmpty()) {
-                    alert(i18n.lang === 'zh' ? '请提供监护人的签名。' : 'Please provide the guardian\'s signature.');
-                    return;
-                }
-                document.getElementById('guardian_signature_data').value = signaturePadGuardian.toDataURL('image/png');
-            }
-        }
+
         
         const submitBtn = document.getElementById('btnSubmit');
         submitBtn.disabled = true;

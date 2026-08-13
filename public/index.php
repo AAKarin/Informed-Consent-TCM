@@ -1,310 +1,435 @@
 <?php
-session_start();
-
-$dbPath = __DIR__ . '/../storage/consent.db';
-$step = $_GET['step'] ?? 'patient';
-$token = $_GET['token'] ?? '';
-$consentData = null;
-$patientData = null;
-
-if ($step === 'practitioner' && !empty($token)) {
-    try {
-        $pdo = new PDO("sqlite:" . $dbPath);
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        $stmt = $pdo->prepare("SELECT * FROM consent_forms WHERE id = ?");
-        $stmt->execute([$token]);
-        $consentData = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        if ($consentData) {
-            $stmt = $pdo->prepare("SELECT * FROM patients WHERE consent_id = ?");
-            $stmt->execute([$token]);
-            $patientData = $stmt->fetch(PDO::FETCH_ASSOC);
-            // Force language to match consent
-            $_SESSION['lang'] = $consentData['language'];
-        }
-    } catch (Exception $e) {}
+// Bagian Pemrosesan Data (Hanya berjalan jika form diserahkan)
+$submitted_data = null;
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    // Kumpulkan dan sanitasi data (contoh dasar)
+    // Dalam aplikasi nyata, gunakan sanitasi yang lebih ketat dan simpan ke database.
+    $submitted_data = $_POST;
+    
+    // Trik untuk menampilkan data yang dikirim dengan rapi (untuk keperluan demo)
+    echo "<div style='background-color: #d4edda; color: #155724; padding: 15px; border: 1px solid #c3e6cb; border-radius: 5px; margin: 20px auto; max-width: 800px;'>";
+    echo "<h3>Formulir Berhasil Dikirim (Contoh Data yang Diterima):</h3>";
+    echo "<pre>";
+    // Menggunakan print_r untuk menampilkan array POST agar mudah dibaca
+    print_r($submitted_data);
+    echo "</pre>";
+    echo "</div>";
+    
+    // Anda bisa menghentikan eksekusi di sini jika hanya ingin melihat data yang dikirim
+    // exit; 
 }
-
-// Determine language (default to English)
-$lang = isset($_GET['lang']) ? $_GET['lang'] : (isset($_SESSION['lang']) ? $_SESSION['lang'] : 'en');
-if (!in_array($lang, ['en', 'zh'])) {
-    $lang = 'en';
-}
-$_SESSION['lang'] = $lang;
-
-// Load language and consent files
-$t = require __DIR__ . "/../lang/{$lang}.php";
-$c = require __DIR__ . "/../consent/{$lang}.php";
-
-// Array of medical history questions for loop
-$medical_questions = [
-    'heart' => $t['q_heart'],
-    'pacemaker' => $t['q_pacemaker'],
-    'diabetes' => $t['q_diabetes'],
-    'hbp' => $t['q_hbp'],
-    'cholesterol' => $t['q_cholesterol'],
-    'cancer' => $t['q_cancer'],
-    'skin' => $t['q_skin'],
-    'allergies' => $t['q_allergies'],
-    'hiv' => $t['q_hiv'],
-    'seizures' => $t['q_seizures'],
-    'anticoagulants' => $t['q_anticoagulants'],
-    'operation' => $t['q_operation'],
-    'bleeding' => $t['q_bleeding'],
-    'pregnant' => $t['q_pregnant']
-];
-
-// Which questions require specification if answered Yes
-$needs_specify = ['cancer', 'allergies', 'operation'];
 ?>
+
 <!DOCTYPE html>
-<html lang="<?= $lang ?>">
+<html lang="zh-Hant-SG">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $t['clinic_name'] ?> - Consent Form</title>
-    <link rel="stylesheet" href="css/style.css">
-    <!-- Signature Pad library -->
-    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+    <title>TCM Consent Form - Siah Ah Cheok</title>
+    <style>
+        body {
+            font-family: Arial, "Helvetica Neue", Helvetica, sans-serif, "Microsoft JhengHei", "Microsoft YaHei";
+            line-height: 1.4;
+            color: #333;
+            max-width: 850px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .form-container {
+            background-color: #fff;
+            padding: 40px;
+            border: 1px solid #ccc;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 15px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: bold;
+        }
+        .header h2 {
+            margin: 5px 0 15px 0;
+            font-size: 20px;
+            font-weight: normal;
+        }
+        .header h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .header h4 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: normal;
+        }
+        fieldset {
+            border: none;
+            padding: 0;
+            margin: 0 0 20px 0;
+        }
+        legend {
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+            width: 100%;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        .form-group {
+            margin-bottom: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .form-group label {
+            flex: 0 0 200px;
+            max-width: 200px;
+            margin-right: 10px;
+            font-size: 0.95em;
+        }
+        .form-group .input-wrapper {
+            flex: 1;
+            display: flex;
+            align-items: center;
+        }
+        input[type="text"],
+        input[type="date"],
+        input[type="tel"] {
+            width: 100%;
+            padding: 6px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            box-sizing: border-box; /* Important for padding */
+        }
+        .inline-inputs {
+            display: flex;
+            gap: 15px;
+            width: 100%;
+        }
+        .inline-field {
+            display: flex;
+            align-items: center;
+            flex: 1;
+        }
+        .inline-field label {
+            flex: 0 0 auto;
+            max-width: none;
+            margin-right: 8px;
+        }
+        .radio-group {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        .note {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: -10px;
+            margin-bottom: 15px;
+        }
+        .consent-text {
+            font-size: 0.95em;
+            margin-bottom: 20px;
+            text-align: justify;
+        }
+        .consent-text p {
+            margin: 0 0 10px 0;
+        }
+        .medical-history-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+        }
+        .medical-history-table th,
+        .medical-history-table td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+            vertical-align: middle;
+        }
+        .medical-history-table th {
+            background-color: #f2f2f2;
+            text-align: center;
+        }
+        .medical-history-table td.condition-label {
+            width: 45%;
+        }
+        .medical-history-table td.radio-cell {
+            width: 15%;
+            text-align: center;
+        }
+        .medical-history-table td.specification-cell {
+            width: 10%;
+        }
+        .other-conditions {
+            width: 100%;
+            height: 60px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            resize: vertical;
+            box-sizing: border-box;
+            margin-bottom: 20px;
+        }
+        .signature-section {
+            margin-top: 30px;
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+        }
+        .signature-block {
+            flex: 1;
+            border-top: 1px solid #333;
+            padding-top: 10px;
+        }
+        .signature-block .sig-line {
+            width: 100%;
+            height: 40px;
+            border-bottom: 1px solid #999;
+            margin-bottom: 5px;
+        }
+        .signature-block .label-sub {
+            font-size: 0.85em;
+            margin-bottom: 5px;
+        }
+        .submit-container {
+            text-align: center;
+            margin-top: 40px;
+        }
+        .submit-btn {
+            background-color: #0056b3;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.1em;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .submit-btn:hover {
+            background-color: #004494;
+        }
+        /* Mobile handling */
+        @media (max-width: 600px) {
+            .form-container { padding: 20px; }
+            .form-group label { flex: 0 0 100%; max-width: 100%; margin-bottom: 5px; }
+            .inline-inputs { flex-direction: column; gap: 10px; }
+            .medical-history-table, .medical-history-table thead, .medical-history-table tbody, .medical-history-table th, .medical-history-table td, .medical-history-table tr { 
+                display: block; 
+            }
+            .medical-history-table thead tr { position: absolute; top: -9999px; left: -9999px; }
+            .medical-history-table tr { border: 1px solid #ccc; margin-bottom: 10px; }
+            .medical-history-table td { border: none; border-bottom: 1px solid #eee; position: relative; padding-left: 50%; text-align: left; }
+            .medical-history-table td:before { position: absolute; top: 6px; left: 6px; width: 45%; padding-right: 10px; white-space: nowrap; font-weight: bold; }
+            .medical-history-table td.condition-label { width: 100%; font-weight: bold; background: #eee; }
+            .medical-history-table td.condition-label:before { content: "Condition"; }
+            .medical-history-table td:nth-of-type(2):before { content: "Yes / 有"; }
+            .medical-history-table td:nth-of-type(3):before { content: "No / 没有"; }
+            .medical-history-table td:nth-of-type(4):before { content: "Unsure / 不确定"; }
+            .medical-history-table td input[type="text"] { width: 100%; }
+            .signature-section { flex-direction: column; }
+        }
+    </style>
 </head>
 <body>
-    <div class="app-container">
-        <!-- Language Switcher -->
-        <div class="language-switcher">
-            <a href="?lang=en" class="lang-btn <?= $lang == 'en' ? 'active' : '' ?>">EN</a>
-            <a href="?lang=zh" class="lang-btn <?= $lang == 'zh' ? 'active' : '' ?>">中文</a>
-        </div>
 
+<div class="form-container">
+    <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="POST">
+        
         <div class="header">
-            <h1><?= $t['clinic_name'] ?></h1>
-            <h2><?= $t['form_title'] ?></h2>
+            <h1>SIAH AH CHEOK CHINESE SIN-SEH CLINIC</h1>
+            <h2>谢存灼中医诊所</h2>
+            <h3>INFORMED CONSENT TO TCM TREATMENT AND ACUPUNCTURE</h3>
+            <h4>中医治疗与针灸同意书</h4>
         </div>
 
+        <!-- Section: Patient Details -->
+        <fieldset>
+            <legend>Patient 病人资料:</legend>
+            
+            <div class="form-group">
+                <label for="patient_name">Name 姓名：</label>
+                <div class="input-wrapper"><input type="text" id="patient_name" name="patient_name" required></div>
+            </div>
 
+            <div class="form-group">
+                <label for="patient_nric">NRIC / Fin No. 身份证号码：</label>
+                <div class="input-wrapper"><input type="text" id="patient_nric" name="patient_nric" required></div>
+            </div>
 
-        <?php if ($step === 'practitioner' && $consentData): ?>
-            <?php if ($consentData['status'] === 'completed'): ?>
-                <div class="form-section" style="text-align: center;">
-                    <h3 class="section-title">Consent Completed</h3>
-                    <p>This consent form has already been completed.</p>
-                </div>
-            <?php else: ?>
-                <form id="practitionerForm">
-                    <input type="hidden" id="practitioner_token" name="token" value="<?= htmlspecialchars($token) ?>">
-                    
-                    <div class="form-section">
-                        <h3 class="section-title">Practitioner Counter-Sign</h3>
-                        <p><strong>Patient Name:</strong> <?= htmlspecialchars($patientData['name']) ?></p>
-                        <p><strong>NRIC/FIN:</strong> <?= htmlspecialchars($patientData['nric']) ?></p>
-                        
-                        <div class="form-group" style="margin-top: 1.5rem;">
-                            <label for="practitioner_name">Practitioner Name *</label>
-                            <input type="text" id="practitioner_name" name="practitioner_name" required>
-                        </div>
-                        
-                        <div class="signature-container">
-                            <label>Practitioner Signature *</label>
-                            <div class="signature-pad-wrapper">
-                                <canvas id="practitionerSignaturePad"></canvas>
-                            </div>
-                            <div class="signature-actions">
-                                <button type="button" class="btn-clear" onclick="clearSignature('practitioner')"><?= $t['btn_clear'] ?></button>
-                            </div>
-                            <input type="hidden" id="practitioner_signature_data" name="practitioner_signature_data">
-                        </div>
-                        
-                        <div class="form-actions" style="justify-content: flex-end;">
-                            <button type="submit" class="btn btn-primary" id="btnSubmitPractitioner"><?= $t['btn_submit'] ?></button>
+            <div class="form-group">
+                <label for="patient_address">Address 地址:</label>
+                <div class="input-wrapper">
+                    <div class="inline-inputs">
+                        <input type="text" id="patient_address" name="patient_address" style="flex: 2;" required>
+                        <div class="inline-field" style="flex: 1;">
+                            <label for="patient_postal">Postal Code 邮区:</label>
+                            <input type="text" id="patient_postal" name="patient_postal" required>
                         </div>
                     </div>
-                </form>
-            <?php endif; ?>
-        <?php elseif ($step === 'practitioner' && !$consentData): ?>
-            <div class="form-section" style="text-align: center; color: var(--error);">
-                <h3 class="section-title">Error</h3>
-                <p>Invalid or missing consent token.</p>
-            </div>
-        <?php else: ?>
-        <form id="consentForm">
-            <!-- STEP 1: Patient Information -->
-            <div class="form-section">
-                <h3 class="section-title"><?= $t['step_patient'] ?></h3>
-                
-                <div class="form-group">
-                    <label for="patient_name"><?= $t['patient_name'] ?> *</label>
-                    <input type="text" id="patient_name" name="patient_name" required>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="patient_nric"><?= $t['patient_nric'] ?> *</label>
-                        <input type="text" id="patient_nric" name="patient_nric" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="patient_dob"><?= $t['patient_dob'] ?> *</label>
-                        <input type="date" id="patient_dob" name="patient_dob" required max="<?= date('Y-m-d') ?>">
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="patient_address"><?= $t['patient_address'] ?> *</label>
-                    <textarea id="patient_address" name="patient_address" required></textarea>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="patient_postal"><?= $t['patient_postal'] ?> *</label>
-                        <input type="text" id="patient_postal" name="patient_postal" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="patient_contact"><?= $t['patient_contact'] ?> *</label>
-                        <input type="tel" id="patient_contact" name="patient_contact" required>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label><?= $t['patient_gender'] ?> *</label>
-                    <div class="radio-group">
-                        <label class="radio-item"><input type="radio" name="patient_gender" value="Male" required> <?= $t['gender_male'] ?></label>
-                        <label class="radio-item"><input type="radio" name="patient_gender" value="Female"> <?= $t['gender_female'] ?></label>
-                    </div>
-                </div>
-
-            </div>
-
-            <!-- STEP 2: Next of Kin (Optional unless < 21) -->
-            <div class="form-section">
-                <h3 class="section-title"><?= $t['step_nok'] ?></h3>
-                <p class="help-text"><?= $t['nok_desc'] ?></p>
-                <div id="nok_alert" style="display:none; color: var(--error); margin-bottom: 1rem; font-size: 0.9rem; font-weight: 500;">
-                    Patient is under 21. Guardian details are mandatory.
-                </div>
-                
-                <div class="form-group">
-                    <label for="nok_name"><?= $t['nok_name'] ?></label>
-                    <input type="text" id="nok_name" name="nok_name">
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="nok_nric"><?= $t['nok_nric'] ?></label>
-                        <input type="text" id="nok_nric" name="nok_nric">
-                    </div>
-                    <div class="form-group">
-                        <label for="nok_relation"><?= $t['nok_relation'] ?></label>
-                        <input type="text" id="nok_relation" name="nok_relation">
-                        <span class="help-text"><?= $t['nok_delete_applicable'] ?></span>
-                    </div>
-                </div>
-
-            </div>
-
-            <!-- STEP 3: Medical History -->
-            <div class="form-section">
-                <h3 class="section-title"><?= $t['step_medical'] ?></h3>
-                <p class="help-text"><?= $t['med_title'] ?> <?= $t['med_indicate'] ?></p>
-
-                <div style="overflow-x: auto;">
-                    <table class="medical-table">
-                        <tbody>
-                            <?php foreach($medical_questions as $key => $label): ?>
-                            <tr>
-                                <td>
-                                    <?= $label ?>
-                                    <?php if(in_array($key, $needs_specify)): ?>
-                                        <input type="text" name="spec_<?= $key ?>" id="spec_<?= $key ?>" class="specify-input" placeholder="<?= $t['please_specify'] ?>">
-                                    <?php endif; ?>
-                                </td>
-                                <td style="width: 250px;">
-                                    <div class="radio-group" style="padding: 0;">
-                                        <label class="radio-item">
-                                            <input type="radio" name="med_<?= $key ?>" value="Yes" <?= in_array($key, $needs_specify) ? 'onchange="toggleSpecify(\''.$key.'\', true)"' : '' ?> required> <?= $t['opt_yes'] ?>
-                                        </label>
-                                        <label class="radio-item">
-                                            <input type="radio" name="med_<?= $key ?>" value="No" <?= in_array($key, $needs_specify) ? 'onchange="toggleSpecify(\''.$key.'\', false)"' : '' ?>> <?= $t['opt_no'] ?>
-                                        </label>
-                                        <label class="radio-item">
-                                            <input type="radio" name="med_<?= $key ?>" value="Unsure" <?= in_array($key, $needs_specify) ? 'onchange="toggleSpecify(\''.$key.'\', false)"' : '' ?>> <?= $t['opt_unsure'] ?>
-                                        </label>
-                                    </div>
-                                </td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="form-group">
-                    <label for="med_others"><?= $t['other_conditions'] ?></label>
-                    <textarea id="med_others" name="med_others"></textarea>
-                </div>
-
-            </div>
-
-            <!-- STEP 4: Consent & Signature -->
-            <div class="form-section">
-                <h3 class="section-title"><?= $t['step_consent'] ?></h3>
-                
-                <div class="consent-text">
-                    <p><?= $c['clause_1'] ?></p>
-                    <p><?= $c['clause_3'] ?></p>
-                    <p><?= $c['clause_4'] ?></p>
-                    <p><?= $c['clause_5'] ?></p>
-                    <p><?= $c['clause_6'] ?></p>
-                </div>
-
-                <div class="consent-agreement">
-                    <label>
-                        <input type="checkbox" id="consent_agree" name="consent_agree" required>
-                        <span><?= $t['consent_read'] ?></span>
-                    </label>
-                </div>
-
-                <div class="signature-container">
-                    <label><?= $t['sig_patient'] ?> *</label>
-                    <div class="signature-pad-wrapper">
-                        <canvas id="patientSignaturePad"></canvas>
-                    </div>
-                    <div class="signature-actions">
-                        <button type="button" class="btn-clear" onclick="clearSignature('patient')"><?= $t['btn_clear'] ?></button>
-                    </div>
-                    <!-- Hidden input to store signature data -->
-                    <input type="hidden" id="patient_signature_data" name="patient_signature_data">
-                </div>
-
-                <div class="signature-container" id="guardianSignatureContainer" style="display: none; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px dashed var(--border-color);">
-                    <p class="help-text" style="color: var(--error); margin-bottom: 0.5rem;"><?= $t['sig_guardian_desc'] ?></p>
-                    <label><?= $t['sig_guardian'] ?> *</label>
-                    <div class="signature-pad-wrapper">
-                        <canvas id="guardianSignaturePad"></canvas>
-                    </div>
-                    <div class="signature-actions">
-                        <button type="button" class="btn-clear" onclick="clearSignature('guardian')"><?= $t['btn_clear'] ?></button>
-                    </div>
-                    <!-- Hidden input to store signature data -->
-                    <input type="hidden" id="guardian_signature_data" name="guardian_signature_data">
-                </div>
-                
-                <!-- Note: Practitioner signature will be handled in a different flow later, as per requirements -->
-
-                <div class="form-actions" style="justify-content: flex-end;">
-                    <button type="submit" class="btn btn-primary" id="btnSubmit"><?= $t['btn_submit'] ?></button>
                 </div>
             </div>
-        </form>
-        <?php endif; ?>
-    </div>
 
-    <!-- Pass language configuration to JS -->
-    <script>
-        const i18n = {
-            lang: '<?= $lang ?>',
-            error_incomplete: '<?= $lang == 'zh' ? '请填写所有必填项目。' : 'Please fill in all required fields.' ?>',
-            error_guardian: '<?= $lang == 'zh' ? '患者未满21岁，必须填写监护人资料。' : 'Patient is under 21. Guardian details are mandatory.' ?>',
-            error_signature: '<?= $lang == 'zh' ? '请提供您的签名。' : 'Please provide your signature.' ?>',
-            error_specify: '<?= $lang == 'zh' ? '请为选择"有"的项目提供详细说明。' : 'Please specify details for items marked "Yes".' ?>'
-        };
-    </script>
-    <script src="js/app.js"></script>
+            <div class="form-group">
+                <label for="patient_contact">Contact number 联络电话：</label>
+                <div class="input-wrapper"><input type="tel" id="patient_contact" name="patient_contact" required></div>
+            </div>
+
+            <div class="form-group">
+                <label>Sex 性别:</label>
+                <div class="input-wrapper radio-group">
+                    <label style="flex:auto; max-width:none; width:auto; margin:0;"><input type="radio" name="patient_sex" value="Male" required> Male 男</label>
+                    <label style="flex:auto; max-width:none; width:auto; margin:0;"><input type="radio" name="patient_sex" value="Female" required> Female 女</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="patient_dob">Date of Birth 出生日期：</label>
+                <div class="input-wrapper"><input type="date" id="patient_dob" name="patient_dob" required></div>
+            </div>
+        </fieldset>
+
+        <!-- Section: Next of Kin -->
+        <fieldset>
+            <legend>Next of Kin 近亲 / Guardian 监护人*:</legend>
+            <p class="note">* delete where applicable 不适用处可删除</p>
+            
+            <div class="form-group">
+                <label for="nok_name">Name 姓名：</label>
+                <div class="input-wrapper"><input type="text" id="nok_name" name="nok_name"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="nok_nric">NRIC / Fin No. 身份证号码：</label>
+                <div class="input-wrapper"><input type="text" id="nok_nric" name="nok_nric"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="nok_relationship">Relationship with Patient 与病人关系：</label>
+                <div class="input-wrapper"><input type="text" id="nok_relationship" name="nok_relationship"></div>
+            </div>
+        </fieldset>
+
+        <!-- Section: Consent Clauses -->
+        <div class="consent-text">
+            <p>1）I hereby request and consent to the performance of procedures on me which are within the scope of practice of Chinese Medicine including, but not limited to, history-taking, acupuncture, electroacupuncture, indirect moxibustion, warm needle moxibustion, Tuina and cupping, and herbal prescriptions.</p>
+            <p>我征求与同意所提供的一切所需的中医治疗，包括但不限于病历记录、针灸、电针治疗、艾灸、温针灸、推拿、拔罐、开方等。</p>
+        </div>
+
+        <!-- Section: Medical History -->
+        <fieldset>
+            <legend>2）I have or previously had the following:</legend>
+            <p class="note">*Indicate 🗹 where applicable | * 适用处请 🗹 表明</p>
+            
+            <table class="medical-history-table">
+                <thead>
+                    <tr>
+                        <th>Condition / 疾病/情况</th>
+                        <th>Yes<br>有</th>
+                        <th>No<br>没有</th>
+                        <th>Unsure<br>不确定</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php
+                    // Helper array to generate rows efficiently
+                    $conditions = [
+                        'a' => ['eng' => 'Heart diseases', 'chi' => '心脏病', 'key' => 'heart_disease'],
+                        'b' => ['eng' => 'Implantation of cardiac pacemaker', 'chi' => '装上心脏起搏器', 'key' => 'pacemaker'],
+                        'c' => ['eng' => 'Diabetes', 'chi' => '糖尿病', 'key' => 'diabetes'],
+                        'd' => ['eng' => 'High blood pressure', 'chi' => '高血压', 'key' => 'high_blood_pressure'],
+                        'e' => ['eng' => 'High cholesterol', 'chi' => '高胆固醇', 'key' => 'high_cholesterol'],
+                        'f' => ['eng' => 'Cancer', 'chi' => '癌症', 'key' => 'cancer', 'spec' => 'cancer_spec'],
+                        'g' => ['eng' => 'Sensitive skin', 'chi' => '皮肤敏感', 'key' => 'sensitive_skin'],
+                        'h' => ['eng' => 'Allergies', 'chi' => '药物过敏', 'key' => 'allergies', 'spec' => 'allergies_spec'],
+                        'i' => ['eng' => 'HIV/AIDS', 'chi' => '艾滋病', 'key' => 'hiv_aids'],
+                        'j' => ['eng' => 'Seizures', 'chi' => '抽搐', 'key' => 'seizures'],
+                        'k' => ['eng' => 'Consumption of anti-coagulants', 'chi' => '服用血薄药等抗凝血剂', 'key' => 'anti_coagulants'],
+                        'l' => ['eng' => 'Operation', 'chi' => '手术', 'key' => 'operation', 'spec' => 'operation_spec'],
+                        'm' => ['eng' => 'Abnormal bleeding', 'chi' => '异常出血', 'key' => 'abnormal_bleeding'],
+                        'n' => ['eng' => 'Currently pregnant (female patients)', 'chi' => '目前怀孕 (女患者)', 'key' => 'currently_pregnant'],
+                    ];
+
+                    foreach ($conditions as $index => $data) {
+                        echo "<tr>";
+                        echo "<td class='condition-label'>{$index}) {$data['eng']}<br>{$data['chi']}";
+                        
+                        // Add specification input if needed (for f, h, l)
+                        if (isset($data['spec'])) {
+                            echo "<br>(please specify: <input type='text' name='{$data['spec']}' style='width:60%; border-bottom:1px solid #999; border-top:none; border-left:none; border-right:none; padding:0; height:15px;'> )";
+                        }
+                        echo "</td>";
+                        
+                        // Radios
+                        echo "<td class='radio-cell'><input type='radio' name='history[{$data['key']}]' value='Yes'></td>";
+                        echo "<td class='radio-cell'><input type='radio' name='history[{$data['key']}]' value='No'></td>";
+                        echo "<td class='radio-cell'><input type='radio' name='history[{$data['key']}]' value='Unsure'></td>";
+                        echo "</tr>";
+                    }
+                    ?>
+                </tbody>
+            </table>
+
+            <label for="other_conditions">If there are other conditions that you wish to inform the physician, please indicate below:<br>
+            若有其它医师须知的情况，请在以下注明：</label>
+            <textarea id="other_conditions" name="other_conditions" class="other-conditions"></textarea>
+        </fieldset>
+
+        <!-- Section: Clauses 3-7 -->
+        <div class="consent-text">
+            <p>3）I have had an opportunity to discuss with TCM Practitioner the nature and purpose of acupuncture. I understand that results are not guaranteed. 我有机会与中医师探讨针灸的作用与性质，并了解其中疗效不能保证。</p>
+            
+            <p>4）I understand and am informed that in the practice of acupuncture and acupressure there are some risks to treatment, including, but not limited to, bruising, tingling or soreness near the needling sites that may last a few days. There have been instances reported of fainting, infections and scarring. I will notify the TCM Practitioner if I take steroids or anti- coagulants or if I have an implanted pacemaker or a prosthetic heart valve. If I experience any gastrointestinal upset or apparent allergic reactions to an herbal prescription, I will stop taking the herbs and inform the TCM Practitioner.</p>
+            <p>我了解并已收到医师告知针灸与穴位按摩治疗包含某些风险，包括但不限于针刺部位出现出血损伤、刺痛、酸胀感等。这些损伤或不适感可持续几天。针灸治疗曾有晕针、发炎、导致伤疤的实例。若我有服用激素、抗凝剂或有植入心脏起搏器、人工心脏瓣膜，必定通知中医师。若我在服药期间出现肠胃不适或对药物起过敏反应，我必定暂停服药并马上通知提供治疗的中医师。</p>
+
+            <p>5）I do not expect the TCM Practitioner to be able to anticipate and explain all risks and complications, and I wish to rely on the TCM Practitioner to exercise judgment during the course of the treatments, based upon the facts then known.</p>
+            <p>我不要求提供治疗的中医师能预知或能解释所有的风险或并发症，我相信医师能在治疗期间根据他所得知的资料做出对的判断。</p>
+
+            <p>6）I understand that all personal information collected during the course of treatment is solely used for the purpose of providing the service. 我了解医师在治疗期间所收集的个人资料是仅为了让医师提供治疗服务。</p>
+
+            <p>7）I have read, or have had read to me, the above consent. I have also had an opportunity to ask questions about its content, and by signing below I agree to the above-named procedures. I intend this consent form to cover the entire course of treatment for my present condition and for any future condition(s) for which I seek treatment.</p>
+            <p>我已阅读或已闻之以上同意书。我有机会向医师提问相关内容，并签署与答应以上所提出的程序。我有意让此同意书涵盖我目前与将来的全程治疗。</p>
+        </div>
+
+        <!-- Section: Signatures (HTML representation) -->
+        <div class="signature-section">
+            <div class="signature-block">
+                <!-- In a real web form, you might use a JS signature pad here -->
+                <div class="sig-line"></div> 
+                <div class="label-sub">Signature of Patient / Next of Kin / Guardian*</div>
+                <div class="label-sub">病人 / 近亲/ 监护人签名*</div>
+                <div class="form-group" style="border:none; margin-top:10px;">
+                    <label for="sign_date_patient" style="flex:0 0 auto;">Date 日期</label>
+                    <input type="date" id="sign_date_patient" name="sign_date_patient" style="width: auto; flex:1;">
+                </div>
+                <p class="note" style="margin-top:10px;">*Guardian’s or Next of Kin’s details and signature are mandatory for patient below 21 years of age.<br>
+                对于 21 岁以下的病人需要近亲或监护人提供签名与个人资料</p>
+            </div>
+
+            <div class="signature-block">
+                <div class="sig-line"></div>
+                <div class="label-sub">Signature of TCM Practitioner</div>
+                <div class="label-sub">医师签名</div>
+                <div class="form-group" style="border:none; margin-top:10px;">
+                    <label for="sign_date_practitioner" style="flex:0 0 auto;">Date 日期</label>
+                    <input type="date" id="sign_date_practitioner" name="sign_date_practitioner" style="width: auto; flex:1;">
+                </div>
+            </div>
+        </div>
+
+        <div class="submit-container">
+            <button type="submit" class="submit-btn">Submit Consent / 提交同意书</button>
+        </div>
+
+    </form>
+</div>
+
 </body>
 </html>

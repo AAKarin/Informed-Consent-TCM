@@ -102,23 +102,7 @@ try {
     $stmt = $pdo->prepare("INSERT INTO signatures (consent_id, type, image_path, signed_by) VALUES (?, 'patient', ?, ?)");
     $stmt->execute([$consentId, $fileName, $patientName]);
     
-    // 8.5 Save Guardian Signature Image (if provided)
-    $guardianSignatureData = $_POST['guardian_signature_data'] ?? '';
-    if (!empty($guardianSignatureData)) {
-        list($typeG, $dataG) = explode(';', $guardianSignatureData);
-        list(, $dataG)      = explode(',', $dataG);
-        $dataG = base64_decode($dataG);
-        
-        if ($dataG !== false) {
-            $guardianFileName = 'sig_' . $consentId . '_guardian.png';
-            $guardianFilePath = $sigDir . '/' . $guardianFileName;
-            if (file_put_contents($guardianFilePath, $dataG) !== false) {
-                // Insert guardian signature record
-                $stmt = $pdo->prepare("INSERT INTO signatures (consent_id, type, image_path, signed_by) VALUES (?, 'guardian', ?, ?)");
-                $stmt->execute([$consentId, $guardianFileName, $nokName]);
-            }
-        }
-    }
+
 
     // 9. Audit log
     $stmt = $pdo->prepare("INSERT INTO audit_logs (consent_id, event) VALUES (?, ?)");
