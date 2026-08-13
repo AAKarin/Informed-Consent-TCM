@@ -13,6 +13,11 @@ try {
     $db = new PDO("sqlite:" . $db_file);
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
+    function writeLog($msg) {
+        $logFile = __DIR__ . '/../storage/logs/app.log';
+        file_put_contents($logFile, date('Y-m-d H:i:s') . " - " . $msg . PHP_EOL, FILE_APPEND);
+    }
+
     // Get consent form
     $stmt = $db->prepare("SELECT * FROM consent_forms WHERE id = :token");
     $stmt->execute([':token' => $token]);
@@ -51,6 +56,9 @@ try {
     }
 
 } catch (Exception $e) {
+    if (function_exists('writeLog')) {
+        writeLog("PDF Generation Database Error: " . $e->getMessage());
+    }
     die("Database Error: " . $e->getMessage());
 }
 
@@ -288,5 +296,16 @@ if (isset($signatures['practitioner'])) {
     $pdf->Cell(80, 5, 'Date 日期: ' . ($signatures['practitioner']['signed_at'] ?? ''), 0, 0, 'L');
 }
 
-// Output PDF (D = Download)
-$pdf->Output('TCM_Consent_' . preg_replace('/[^A-Za-z0-9]/', '_', ($patient['name'] ?? 'Unknown')) . '_' . date('Ymd', strtotime($consent['created_at'])) . '.pdf', 'D');
+// Output PDF
+$filename = 'TCM_Consent_' . preg_replace('/[^A-Za-z0-9]/', '_', ($patient['name'] ?? 'Unknown')) . '_' . date('Ymd', strtotime($consent['created_at'] ?? 'now')) . '.pdf';
+$pdfPath = __DIR__ . '/../storage/pdf/' . $filename;
+
+try {
+    $stmt = $db->prepare("INSERT INTO audit_logs (consent_id, event) VALUES (?, ?)");
+    $stmt->execute([$token, 'PDF generated and downloaded']);
+    writeLog("Generated PDF for token: $token, saved to $pdfPath");
+} catch (Exception $e) {
+    writeLog("Failed to insert audit log for PDF generation: " . $e->getMessage());
+}
+
+$pdf->Output($pdfPath, 'FD');

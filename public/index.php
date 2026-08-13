@@ -345,6 +345,8 @@ if (empty($_SESSION['csrf_token'])) {
     <label class="lang-option"><input type="radio" name="lang_setting" value="lang-en"> English</label>
     <label class="lang-option"><input type="radio" name="lang_setting" value="lang-zh"> 中文 (Chinese)</label>
     <label class="lang-option"><input type="radio" name="lang_setting" value="lang-id"> Indonesia</label>
+    <hr style="margin: 15px 0;">
+    <button type="button" id="testFillBtn" style="width: 100%; padding: 8px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">Test Fill Data</button>
 </div>
 
 <div class="form-container">
@@ -393,14 +395,14 @@ if (empty($_SESSION['csrf_token'])) {
                 </label>
                 <div class="input-wrapper">
                     <div class="inline-inputs">
-                        <input type="text" id="patient_address" name="patient_address" style="flex: 2;" required>
-                        <div class="inline-field" style="flex: 1;">
+                        <input type="text" id="patient_address" name="patient_address" style="flex: 1;" required>
+                        <div class="inline-field" style="flex: 0 0 auto;">
                             <label for="patient_postal">
                                 <span class="lang-inline lang-en">Postal Code </span>
                                 <span class="lang-inline lang-zh">邮区:</span>
                                 <span class="lang-inline lang-id">Kode Pos:</span>
                             </label>
-                            <input type="text" id="patient_postal" name="patient_postal" required>
+                            <input type="text" id="patient_postal" name="patient_postal" style="width: 120px;" required>
                         </div>
                     </div>
                 </div>
@@ -937,6 +939,93 @@ if (empty($_SESSION['csrf_token'])) {
             alert("An error occurred while submitting the form. Please check your connection.");
         });
     });
+
+    // --- Test Fill Data Logic ---
+    let testDataIndex = 0;
+    const testDatasets = [
+        {
+            name: "John Doe", nric: "S1234567A", address: "123 Orchard Road", postal: "238888", contact: "81234567", sex: "Male", dob: "1990-01-01",
+            nokName: "", nokNric: "", nokRel: "",
+            history: {
+                heart_disease: "No", pacemaker: "No", diabetes: "No", high_blood_pressure: "No", high_cholesterol: "No",
+                cancer: "No", sensitive_skin: "No", allergies: "No", hiv_aids: "No", seizures: "No", anti_coagulants: "No",
+                operation: "No", abnormal_bleeding: "No", currently_pregnant: "No"
+            },
+            other: "None"
+        },
+        {
+            name: "Jane Smith", nric: "S7654321B", address: "456 Marina Bay", postal: "018980", contact: "98765432", sex: "Female", dob: "2010-05-15",
+            nokName: "Mary Smith", nokNric: "S1111111C", nokRel: "Mother",
+            history: {
+                heart_disease: "No", pacemaker: "No", diabetes: "No", high_blood_pressure: "No", high_cholesterol: "No",
+                cancer: "No", sensitive_skin: "Yes", allergies: "Yes", hiv_aids: "No", seizures: "No", anti_coagulants: "No",
+                operation: "No", abnormal_bleeding: "No", currently_pregnant: "No"
+            },
+            specs: { allergies_spec: "Penicillin" },
+            other: "Asthma"
+        },
+        {
+            name: "Tan Ah Kow", nric: "S9988776D", address: "789 Jurong East", postal: "609606", contact: "91112222", sex: "Male", dob: "1975-10-20",
+            nokName: "Tan May Ling", nokNric: "S2222222E", nokRel: "Wife",
+            history: {
+                heart_disease: "Yes", pacemaker: "Yes", diabetes: "Yes", high_blood_pressure: "Yes", high_cholesterol: "Yes",
+                cancer: "Yes", sensitive_skin: "No", allergies: "No", hiv_aids: "No", seizures: "No", anti_coagulants: "Yes",
+                operation: "Yes", abnormal_bleeding: "No", currently_pregnant: "No"
+            },
+            specs: { cancer_spec: "Lung cancer", operation_spec: "Heart bypass in 2020" },
+            other: "Requires wheelchair"
+        }
+    ];
+
+    const testFillBtn = document.getElementById('testFillBtn');
+    if (testFillBtn) {
+        testFillBtn.addEventListener('click', () => {
+            const data = testDatasets[testDataIndex];
+            
+            document.getElementById('patient_name').value = data.name;
+            document.getElementById('patient_nric').value = data.nric;
+            document.getElementById('patient_address').value = data.address;
+            document.getElementById('patient_postal').value = data.postal;
+            document.getElementById('patient_contact').value = data.contact;
+            document.getElementById('patient_dob').value = data.dob;
+            
+            const sexRadios = document.querySelectorAll('input[name="patient_sex"]');
+            sexRadios.forEach(r => r.checked = (r.value === data.sex));
+            
+            document.getElementById('nok_name').value = data.nokName;
+            document.getElementById('nok_nric').value = data.nokNric;
+            document.getElementById('nok_relationship').value = data.nokRel;
+            
+            Object.keys(data.history).forEach(key => {
+                const radio = document.querySelector(`input[name="history[${key}]"][value="${data.history[key]}"]`);
+                if (radio) radio.checked = true;
+            });
+            
+            ['cancer_spec', 'allergies_spec', 'operation_spec'].forEach(k => {
+                const specInput = document.querySelector(`input[name="${k}"]`);
+                if (specInput) specInput.value = '';
+            });
+
+            if (data.specs) {
+                Object.keys(data.specs).forEach(key => {
+                    const specInput = document.querySelector(`input[name="${key}"]`);
+                    if (specInput) specInput.value = data.specs[key];
+                });
+            }
+            
+            document.getElementById('other_conditions').value = data.other;
+            
+            const dotDataURL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAANSURBVBhXY3jP4PgfAAWgA53n+0FMAAAAAElFTkSuQmCC";
+            if (signaturePadPatient) signaturePadPatient.fromDataURL(dotDataURL);
+            if (signaturePadPractitioner) signaturePadPractitioner.fromDataURL(dotDataURL);
+
+            const todayStr = new Date().toISOString().split('T')[0];
+            document.querySelector('input[name="patient_signature_date"]').value = todayStr;
+            document.querySelector('input[name="practitioner_signature_date"]').value = todayStr;
+            
+            testDataIndex = (testDataIndex + 1) % testDatasets.length;
+        });
+    }
 
     // Register Service Worker for PWA
     if ('serviceWorker' in navigator) {
