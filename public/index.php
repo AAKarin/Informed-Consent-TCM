@@ -26,6 +26,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TCM Consent Form - Siah Ah Cheok</title>
+    <!-- Signature Pad library -->
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
     <style>
         body {
             font-family: Arial, "Helvetica Neue", Helvetica, sans-serif, "Microsoft JhengHei", "Microsoft YaHei";
@@ -399,28 +401,65 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </div>
 
         <!-- Section: Signatures (HTML representation) -->
-        <div class="signature-section">
-            <div class="signature-block">
-                <!-- In a real web form, you might use a JS signature pad here -->
-                <div class="sig-line"></div> 
-                <div class="label-sub">Signature of Patient / Next of Kin / Guardian*</div>
-                <div class="label-sub">病人 / 近亲/ 监护人签名*</div>
-                <div class="form-group" style="border:none; margin-top:10px;">
-                    <label for="sign_date_patient" style="flex:0 0 auto;">Date 日期</label>
-                    <input type="date" id="sign_date_patient" name="sign_date_patient" style="width: auto; flex:1;">
-                </div>
-                <p class="note" style="margin-top:10px;">*Guardian’s or Next of Kin’s details and signature are mandatory for patient below 21 years of age.<br>
-                对于 21 岁以下的病人需要近亲或监护人提供签名与个人资料</p>
+        <div class="signature-container">
+            <div class="signature-box" style="margin-bottom: 30px;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="width: 70%; border-bottom: 1px solid #333; vertical-align: bottom; padding-bottom: 5px; padding-right: 15px;">
+                            <div style="border: 1px dashed #ccc; background-color: #f9f9f9; width: 100%; height: 120px; position: relative;">
+                                <canvas id="patientSignaturePad" style="width: 100%; height: 100%; touch-action: none; cursor: crosshair;"></canvas>
+                            </div>
+                            <div style="text-align: right; margin-top: 5px;">
+                                <button type="button" onclick="clearPatientSignature()" style="font-size: 0.8em; padding: 2px 8px; cursor: pointer; background: #eee; border: 1px solid #ccc; border-radius: 3px;">Clear / 清除</button>
+                            </div>
+                            <input type="hidden" id="patient_signature_data" name="patient_signature_data">
+                        </td>
+                        <td style="width: 30%; border-bottom: 1px solid #333; vertical-align: bottom; padding-bottom: 5px; text-align: center;">
+                            <input type="date" name="patient_signature_date" class="date-input" style="border: none; background: transparent; font-size: 1.1em; text-align: center; width: 100%; outline: none;" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding-top: 5px;">
+                            <p style="margin: 0; font-weight: bold;">Signature of Patient / Next of Kin / Guardian*</p>
+                            <p style="margin: 0;">病人 / 近亲 / 监护人签名*</p>
+                            <p style="margin: 5px 0 0 0; font-size: 0.85em; color: #666;"><i>*Guardian's or Next of Kin's details and signature are mandatory for patient below 21 years of age.</i></p>
+                            <p style="margin: 0; font-size: 0.85em; color: #666;"><i>对于 21 岁以下的病人需要近亲或监护人提供签名与个人资料</i></p>
+                        </td>
+                        <td style="padding-top: 5px; text-align: center; vertical-align: top;">
+                            <p style="margin: 0; font-weight: bold;">Date</p>
+                            <p style="margin: 0;">日期</p>
+                        </td>
+                    </tr>
+                </table>
             </div>
-
-            <div class="signature-block">
-                <div class="sig-line"></div>
-                <div class="label-sub">Signature of TCM Practitioner</div>
-                <div class="label-sub">医师签名</div>
-                <div class="form-group" style="border:none; margin-top:10px;">
-                    <label for="sign_date_practitioner" style="flex:0 0 auto;">Date 日期</label>
-                    <input type="date" id="sign_date_practitioner" name="sign_date_practitioner" style="width: auto; flex:1;">
-                </div>
+            
+            <div class="signature-box" style="margin-bottom: 30px;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="width: 70%; border-bottom: 1px solid #333; vertical-align: bottom; padding-bottom: 5px; padding-right: 15px;">
+                            <div style="border: 1px dashed #ccc; background-color: #f9f9f9; width: 100%; height: 120px; position: relative;">
+                                <canvas id="practitionerSignaturePad" style="width: 100%; height: 100%; touch-action: none; cursor: crosshair;"></canvas>
+                            </div>
+                            <div style="text-align: right; margin-top: 5px;">
+                                <button type="button" onclick="clearPractitionerSignature()" style="font-size: 0.8em; padding: 2px 8px; cursor: pointer; background: #eee; border: 1px solid #ccc; border-radius: 3px;">Clear / 清除</button>
+                            </div>
+                            <input type="hidden" id="practitioner_signature_data" name="practitioner_signature_data">
+                        </td>
+                        <td style="width: 30%; border-bottom: 1px solid #333; vertical-align: bottom; padding-bottom: 5px; text-align: center;">
+                            <input type="date" name="practitioner_signature_date" class="date-input" style="border: none; background: transparent; font-size: 1.1em; text-align: center; width: 100%; outline: none;" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding-top: 5px;">
+                            <p style="margin: 0; font-weight: bold;">Signature of TCM Practitioner</p>
+                            <p style="margin: 0;">医师签名</p>
+                        </td>
+                        <td style="padding-top: 5px; text-align: center; vertical-align: top;">
+                            <p style="margin: 0; font-weight: bold;">Date</p>
+                            <p style="margin: 0;">日期</p>
+                        </td>
+                    </tr>
+                </table>
             </div>
         </div>
 
@@ -430,6 +469,86 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     </form>
 </div>
+
+<script>
+    // Initialize Signature Pads
+    const canvasPatient = document.getElementById('patientSignaturePad');
+    const canvasPractitioner = document.getElementById('practitionerSignaturePad');
+    
+    let signaturePadPatient;
+    let signaturePadPractitioner;
+    
+    if (canvasPatient) {
+        signaturePadPatient = new SignaturePad(canvasPatient, {
+            backgroundColor: 'rgba(255, 255, 255, 0)',
+            penColor: 'rgb(0, 0, 0)'
+        });
+    }
+
+    if (canvasPractitioner) {
+        signaturePadPractitioner = new SignaturePad(canvasPractitioner, {
+            backgroundColor: 'rgba(255, 255, 255, 0)',
+            penColor: 'rgb(0, 0, 0)'
+        });
+    }
+    
+    // Handle canvas resize
+    function resizeCanvas() {
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+        
+        if (canvasPatient && canvasPatient.offsetParent !== null) {
+            canvasPatient.width = canvasPatient.offsetWidth * ratio;
+            canvasPatient.height = canvasPatient.offsetHeight * ratio;
+            canvasPatient.getContext("2d").scale(ratio, ratio);
+            signaturePadPatient.clear();
+        }
+        
+        if (canvasPractitioner && canvasPractitioner.offsetParent !== null) {
+            canvasPractitioner.width = canvasPractitioner.offsetWidth * ratio;
+            canvasPractitioner.height = canvasPractitioner.offsetHeight * ratio;
+            canvasPractitioner.getContext("2d").scale(ratio, ratio);
+            signaturePadPractitioner.clear();
+        }
+    }
+    
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+    
+    function clearPatientSignature() {
+        if (signaturePadPatient) {
+            signaturePadPatient.clear();
+        }
+    }
+
+    function clearPractitionerSignature() {
+        if (signaturePadPractitioner) {
+            signaturePadPractitioner.clear();
+        }
+    }
+    
+    // Save signature data before submit
+    document.querySelector('form').addEventListener('submit', function(e) {
+        let hasError = false;
+        
+        if (signaturePadPatient && !signaturePadPatient.isEmpty()) {
+            document.getElementById('patient_signature_data').value = signaturePadPatient.toDataURL('image/png');
+        } else {
+            alert('Please provide patient signature. 请提供病人签名。');
+            hasError = true;
+        }
+
+        if (signaturePadPractitioner && !signaturePadPractitioner.isEmpty()) {
+            document.getElementById('practitioner_signature_data').value = signaturePadPractitioner.toDataURL('image/png');
+        } else {
+            alert('Please provide practitioner signature. 请提供医师签名。');
+            hasError = true;
+        }
+
+        if (hasError) {
+            e.preventDefault();
+        }
+    });
+</script>
 
 </body>
 </html>
