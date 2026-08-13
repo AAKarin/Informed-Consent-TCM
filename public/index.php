@@ -224,12 +224,10 @@ if (empty($_SESSION['csrf_token'])) {
         }
         .sig-pad-col {
             flex: 2;
-            border-bottom: 1px solid #333;
             padding-bottom: 5px;
         }
         .sig-date-col {
             flex: 1;
-            border-bottom: 1px solid #333;
             padding-bottom: 5px;
             text-align: center;
         }
@@ -257,7 +255,6 @@ if (empty($_SESSION['csrf_token'])) {
             
             .signature-flex { flex-direction: column; align-items: stretch; gap: 10px; }
             .sig-pad-col, .sig-date-col { border-bottom: none; }
-            .sig-pad-col .sig-line, .sig-date-col .sig-line { border-bottom: 1px solid #333; padding-bottom: 5px; }
             .date-input { margin-top: 10px; border-bottom: 1px solid #ccc !important; padding-bottom: 10px; font-size: 16px !important; }
         }
     </style>
@@ -436,22 +433,24 @@ if (empty($_SESSION['csrf_token'])) {
                             </div>
                             <input type="hidden" id="patient_signature_data" name="patient_signature_data">
                         </div>
-                        <div style="padding-top: 5px;">
+                        <div style="padding-top: 5px; border-top: 1px solid #333;">
                             <p style="margin: 0; font-weight: bold;">Signature of Patient / Next of Kin / Guardian*</p>
                             <p style="margin: 0;">病人 / 近亲 / 监护人签名*</p>
-                            <p style="margin: 5px 0 0 0; font-size: 0.85em; color: #666;"><i>*Guardian's or Next of Kin's details and signature are mandatory for patient below 21 years of age.</i></p>
-                            <p style="margin: 0; font-size: 0.85em; color: #666;"><i>对于 21 岁以下的病人需要近亲或监护人提供签名与个人资料</i></p>
                         </div>
                     </div>
                     <div class="sig-date-col">
                         <div class="sig-line">
                             <input type="date" name="patient_signature_date" class="date-input" style="border: none; background: transparent; font-size: 1.1em; text-align: center; width: 100%; outline: none;" required>
                         </div>
-                        <div style="padding-top: 5px; text-align: center;">
+                        <div style="padding-top: 5px; border-top: 1px solid #333; text-align: center;">
                             <p style="margin: 0; font-weight: bold;">Date</p>
                             <p style="margin: 0;">日期</p>
                         </div>
                     </div>
+                </div>
+                <div style="margin-top: 15px;">
+                    <p style="margin: 0; font-size: 0.85em; color: #666;"><i>*Guardian's or Next of Kin's details and signature are mandatory for <b>patient below 21 years of age.</b></i></p>
+                    <p style="margin: 0; font-size: 0.85em; color: #666;"><i>对于 <b>21 岁以下的病人</b>需要近亲或监护人提供签名与个人资料</i></p>
                 </div>
             </div>
             
@@ -467,7 +466,7 @@ if (empty($_SESSION['csrf_token'])) {
                             </div>
                             <input type="hidden" id="practitioner_signature_data" name="practitioner_signature_data">
                         </div>
-                        <div style="padding-top: 5px;">
+                        <div style="padding-top: 5px; border-top: 1px solid #333;">
                             <p style="margin: 0; font-weight: bold;">Signature of TCM Practitioner</p>
                             <p style="margin: 0;">医师签名</p>
                         </div>
@@ -476,7 +475,7 @@ if (empty($_SESSION['csrf_token'])) {
                         <div class="sig-line">
                             <input type="date" name="practitioner_signature_date" class="date-input" style="border: none; background: transparent; font-size: 1.1em; text-align: center; width: 100%; outline: none;" required>
                         </div>
-                        <div style="padding-top: 5px; text-align: center;">
+                        <div style="padding-top: 5px; border-top: 1px solid #333; text-align: center;">
                             <p style="margin: 0; font-weight: bold;">Date</p>
                             <p style="margin: 0;">日期</p>
                         </div>
