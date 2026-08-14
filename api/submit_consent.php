@@ -43,7 +43,7 @@ try {
         trim($_POST['patient_address'] ?? ''),
         trim($_POST['patient_postal'] ?? ''),
         trim($_POST['patient_contact'] ?? ''),
-        trim($_POST['patient_gender'] ?? ''),
+        trim($_POST['patient_sex'] ?? ''),
         trim($_POST['patient_dob'] ?? '')
     ]);
 
@@ -55,7 +55,7 @@ try {
             $consentId,
             $nokName,
             trim($_POST['nok_nric'] ?? ''),
-            trim($_POST['nok_relation'] ?? '')
+            trim($_POST['nok_relationship'] ?? '')
         ]);
     }
 

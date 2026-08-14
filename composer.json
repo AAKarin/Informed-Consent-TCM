@@ -3,6 +3,7 @@
         "mpdf/mpdf": "^8.2"
     },
     "config": {
-        "disable-tls": true
+        "disable-tls": true,
+        "cafile": "cacert.pem"
     }
 }
