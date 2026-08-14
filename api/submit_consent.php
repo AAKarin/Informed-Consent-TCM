@@ -63,20 +63,27 @@ try {
     $history = $_POST['history'] ?? [];
     
     $mapping = [
-        'heart_disease' => 'heart',
-        'pacemaker' => 'pacemaker',
-        'diabetes' => 'diabetes',
-        'high_blood_pressure' => 'hbp',
-        'high_cholesterol' => 'cholesterol',
-        'cancer' => 'cancer',
-        'sensitive_skin' => 'skin',
-        'allergies' => 'allergies',
-        'hiv_aids' => 'hiv',
-        'seizures' => 'seizures',
-        'anti_coagulants' => 'anticoagulants',
         'operation' => 'operation',
-        'abnormal_bleeding' => 'bleeding',
-        'currently_pregnant' => 'pregnant'
+        'medication' => 'medication',
+        'allergies' => 'allergies',
+        'asthma' => 'asthma',
+        'hbp' => 'hbp',
+        'diabetes' => 'diabetes',
+        'depression' => 'depression',
+        'skin' => 'skin',
+        'injuries' => 'injuries',
+        'mobility' => 'mobility',
+        'heart' => 'heart',
+        'pacemaker' => 'pacemaker',
+        'bleeding' => 'bleeding',
+        'hiv' => 'hiv',
+        'thalassemia' => 'thalassemia',
+        'seizures' => 'seizures',
+        'hepatitis' => 'hepatitis',
+        'cancer' => 'cancer',
+        'fainting' => 'fainting',
+        'pregnant' => 'pregnant',
+        'irregular_periods' => 'irregular_periods'
     ];
     
     $stmt = $pdo->prepare("INSERT INTO medical_answers (consent_id, question_code, answer, specification) VALUES (?, ?, ?, ?)");
@@ -89,6 +96,7 @@ try {
             if ($postKey === 'cancer') $spec = trim($_POST['cancer_spec'] ?? '');
             if ($postKey === 'allergies') $spec = trim($_POST['allergies_spec'] ?? '');
             if ($postKey === 'operation') $spec = trim($_POST['operation_spec'] ?? '');
+            if ($postKey === 'medication') $spec = trim($_POST['medication_spec'] ?? '');
             
             $stmt->execute([$consentId, $dbKey, $ans, $spec]);
         }
@@ -146,8 +154,9 @@ try {
     }
 
     // Insert practitioner signature record
-    $stmt = $pdo->prepare("INSERT INTO signatures (consent_id, type, image_path, signed_by) VALUES (?, 'practitioner', ?, 'TCM Practitioner')");
-    $stmt->execute([$consentId, $fileName2]);
+    $physicianName = trim($_POST['physician_name'] ?? 'TCM Practitioner');
+    $stmt = $pdo->prepare("INSERT INTO signatures (consent_id, type, image_path, signed_by) VALUES (?, 'practitioner', ?, ?)");
+    $stmt->execute([$consentId, $fileName2, $physicianName]);
     
 
 
