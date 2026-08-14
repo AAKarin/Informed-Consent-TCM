@@ -60,21 +60,44 @@ try {
     }
 
     // 6. Insert medical answers
-    $questions = ['heart', 'pacemaker', 'diabetes', 'hbp', 'cholesterol', 'cancer', 'skin', 'allergies', 'hiv', 'seizures', 'anticoagulants', 'operation', 'bleeding', 'pregnant'];
+    $history = $_POST['history'] ?? [];
+    
+    $mapping = [
+        'heart_disease' => 'heart',
+        'pacemaker' => 'pacemaker',
+        'diabetes' => 'diabetes',
+        'high_blood_pressure' => 'hbp',
+        'high_cholesterol' => 'cholesterol',
+        'cancer' => 'cancer',
+        'sensitive_skin' => 'skin',
+        'allergies' => 'allergies',
+        'hiv_aids' => 'hiv',
+        'seizures' => 'seizures',
+        'anti_coagulants' => 'anticoagulants',
+        'operation' => 'operation',
+        'abnormal_bleeding' => 'bleeding',
+        'currently_pregnant' => 'pregnant'
+    ];
     
     $stmt = $pdo->prepare("INSERT INTO medical_answers (consent_id, question_code, answer, specification) VALUES (?, ?, ?, ?)");
-    foreach ($questions as $q) {
-        $ans = trim($_POST['med_' . $q] ?? '');
+    
+    foreach ($mapping as $postKey => $dbKey) {
+        $ans = trim($history[$postKey] ?? '');
         if (!empty($ans)) {
-            $spec = trim($_POST['spec_' . $q] ?? '');
-            $stmt->execute([$consentId, $q, $ans, $spec]);
+            $spec = '';
+            // Handle specification text fields
+            if ($postKey === 'cancer') $spec = trim($_POST['cancer_spec'] ?? '');
+            if ($postKey === 'allergies') $spec = trim($_POST['allergies_spec'] ?? '');
+            if ($postKey === 'operation') $spec = trim($_POST['operation_spec'] ?? '');
+            
+            $stmt->execute([$consentId, $dbKey, $ans, $spec]);
         }
     }
     
     // Also save "others" as a special medical answer if provided
-    $medOthers = trim($_POST['med_others'] ?? '');
-    if (!empty($medOthers)) {
-        $stmt->execute([$consentId, 'others', 'Yes', $medOthers]);
+    $otherConditions = trim($_POST['other_conditions'] ?? '');
+    if (!empty($otherConditions)) {
+        $stmt->execute([$consentId, 'others', 'Yes', $otherConditions]);
     }
 
     // 7. Save Signature Image

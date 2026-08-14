@@ -7,7 +7,7 @@ import pymupdf  # PyMuPDF
 def generate_pdf(token):
     base_dir = os.path.dirname(os.path.abspath(__file__))
     db_path = os.path.join(base_dir, '..', 'storage', 'consent.db')
-    template_path = os.path.join(base_dir, '..', 'storage', 'pdf_templates', 'INFORMED-CONSENT-FILLABLE.pdf')
+    template_path = os.path.join(base_dir, '..', 'public', 'template', 'INFORMED-CONSENT.pdf')
     
     if not os.path.exists(template_path):
         print(f"ERROR: Template not found at {template_path}. Please upload the fillable PDF template.", file=sys.stderr)
@@ -32,7 +32,7 @@ def generate_pdf(token):
         # Get medical answers
         cursor.execute("SELECT * FROM medical_answers WHERE consent_id = ?", (token,))
         medical_rows = cursor.fetchall()
-        medical = {row['condition_key']: row for row in medical_rows}
+        medical = {row['question_code']: row for row in medical_rows}
         
         # Get signatures
         cursor.execute("SELECT * FROM signatures WHERE consent_id = ?", (token,))
@@ -54,54 +54,73 @@ def generate_pdf(token):
     address_str = patient['address']
         
     form_data = {
-        'patient_name': patient_name,
-        'patient_nric': patient['nric'],
-        'patient_address': address_str,
-        'patient_postal_code': patient['postal_code'] if patient['postal_code'] else '',
-        'patient_contact': patient['contact_number'],
-        'patient_dob_gender': patient['date_of_birth']
+        'Text1': patient_name,
+        'Text2': patient['nric'],
+        'Text3': address_str,
+        'Text4': patient['postal_code'] if patient['postal_code'] else '',
+        'Text5': patient['contact_number'],
+        'Text6': patient['date_of_birth']
     }
     
     # Store gender so we can draw it manually later
     patient_gender_val = patient['gender']
     
     if guardian:
-        form_data['guardian_name'] = guardian['name']
-        form_data['guardian_nric'] = guardian['nric']
-        form_data['guardian_relationship'] = guardian['relationship']
+        form_data['Text7'] = guardian['name']
+        form_data['Text8'] = guardian['nric']
+        form_data['Text9'] = guardian['relationship']
         
     # Map medical answers
-    # Convert 'Yes'/'No'/'Unsure' to checkbox logic
+    # Database keys to PDF Checkbox names: (Yes, No, Unsure)
+    med_mapping = {
+        'heart': ('Button15', 'Button16', 'Button17'),
+        'pacemaker': ('Button18', 'Button46', 'Button47'),
+        'diabetes': ('Button19', 'Button45', 'Button48'),
+        'hbp': ('Button20', 'Button44', 'Button49'),
+        'cholesterol': ('Button21', 'Button43', 'Button50'),
+        'cancer': ('Button22', 'Button42', 'Button51'),
+        'skin': ('Button23', 'Button41', 'Button52'),
+        'allergies': ('Button24', 'Button40', 'Button53'),
+        'hiv': ('Button25', 'Button39', 'Button54'),
+        'seizures': ('Button26', 'Button38', 'Button55'),
+        'anticoagulants': ('Button27', 'Button37', 'Button56'),
+        'operation': ('Button28', 'Button35', 'Button34'),
+        'bleeding': ('Button29', 'Button36', 'Button33'),
+        'pregnant': ('Button30', 'Button31', 'Button32')
+    }
+    
+    spec_mapping = {
+        'cancer': 'Text10',
+        'allergies': 'Text11',
+        'operation': 'Text12'
+    }
+
     for key, row in medical.items():
-        ans = row['answer']
-        spec = row['specification']
-        
-        # Check the correct box by setting it to True (which turns it ON in PyMuPDF)
-        if ans == 'Yes':
-            form_data[f'medical_{key}_yes'] = True
-        elif ans == 'No':
-            form_data[f'medical_{key}_no'] = True
-        elif ans == 'Unsure':
-            form_data[f'medical_{key}_unsure'] = True
+        if key == 'others':
+            if row['specification']:
+                form_data['Text59'] = row['specification']
+            continue
             
-        # If there's a specification and it's 'Yes', we might want to put it in a general 'others' or specific text field if one exists.
-        # We mapped 'medical_others_p1_1', etc. but we'll just put all specs into 'medical_others' for now 
-        # or append them to a list.
-        if ans == 'Yes' and spec:
-            if 'medical_others' not in form_data:
-                form_data['medical_others'] = ""
-            form_data['medical_others'] += f"{key.capitalize()}: {spec}. "
-        
-    if 'others' in medical and medical['others']['specification']:
-        if 'medical_others' not in form_data:
-            form_data['medical_others'] = ""
-        form_data['medical_others'] += medical['others']['specification']
+        if key in med_mapping:
+            ans = row['answer']
+            btn_yes, btn_no, btn_unsure = med_mapping[key]
+            
+            if ans == 'Yes':
+                form_data[btn_yes] = True
+            elif ans == 'No':
+                form_data[btn_no] = True
+            elif ans == 'Unsure':
+                form_data[btn_unsure] = True
+                
+            # Handle specification
+            if ans == 'Yes' and key in spec_mapping and row['specification']:
+                form_data[spec_mapping[key]] = row['specification']
 
     # Dates
     if 'patient' in signatures:
-        form_data['patient_date'] = signatures['patient']['signed_at'].split(' ')[0]
+        form_data['Text13'] = signatures['patient']['signed_at'].split(' ')[0]
     if 'practitioner' in signatures:
-        form_data['practitioner_date'] = signatures['practitioner']['signed_at'].split(' ')[0]
+        form_data['Text14'] = signatures['practitioner']['signed_at'].split(' ')[0]
 
     try:
         doc = pymupdf.open(template_path)
@@ -111,7 +130,7 @@ def generate_pdf(token):
             for widget in page.widgets():
                 field_name = widget.field_name
                 # Handle Signatures
-                if field_name == 'patient_signature_area' and 'patient' in signatures:
+                if field_name == 'Text57' and 'patient' in signatures:
                     sig_path = os.path.join(base_dir, '..', 'storage', 'signatures', signatures['patient']['image_path'])
                     if os.path.exists(sig_path):
                         rect = widget.rect
@@ -119,7 +138,7 @@ def generate_pdf(token):
                         widgets_to_delete.append(widget)
                         continue
                         
-                if field_name == 'practitioner_signature_area' and 'practitioner' in signatures:
+                if field_name == 'Text58' and 'practitioner' in signatures:
                     sig_path = os.path.join(base_dir, '..', 'storage', 'signatures', signatures['practitioner']['image_path'])
                     if os.path.exists(sig_path):
                         rect = widget.rect

@@ -670,6 +670,9 @@ if (empty($_SESSION['csrf_token'])) {
                                 </button>
                             </div>
                             <input type="hidden" id="practitioner_signature_data" name="practitioner_signature_data">
+                            <div style="margin-top: 10px; margin-bottom: 5px;">
+                                <input type="text" name="physician_name" id="physician_name" placeholder="Name of TCM Practitioner / 医师姓名" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;" required>
+                            </div>
                         </div>
                         <div style="padding-top: 5px; border-top: 1px solid #333;">
                             <p style="margin: 0; font-weight: bold;" class="lang-elem lang-en">Signature of TCM Practitioner</p>
