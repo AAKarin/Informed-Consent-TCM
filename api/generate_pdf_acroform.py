@@ -199,7 +199,11 @@ def generate_pdf(token):
                     val = str(form_data[field_name] or '')
                     widget.field_value = val
                     widget.text_font = 'china-s'
-                    widget.text_fontsize = 8.5
+                    # Larger, clearer font size
+                    if field_name == 'Text31':
+                        widget.text_fontsize = 9.5
+                    else:
+                        widget.text_fontsize = 10.5
                     widget.border_width = 0
                     widget.border_color = None
                     widget.fill_color = None
