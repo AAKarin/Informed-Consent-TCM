@@ -1,11 +1,22 @@
 # Vendor / Libraries
 vendor/
 libs/
+composer.phar
+cacert.pem
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
 
 # Database and Storage
-storage/signatures/*.png
-storage/pdf/*.pdf
-storage/logs/*.log
+storage/signatures/*
+!storage/signatures/.gitkeep
+storage/pdf/*
+!storage/pdf/.gitkeep
+storage/logs/*
+!storage/logs/.gitkeep
 storage/consent.db
 *.sqlite
 *.sqlite3
@@ -14,19 +25,20 @@ storage/consent.db
 # Environment and Secrets
 .env
 .env.local
+.env.*.local
 
-# Temporary / Testing files
-test.pdf
+# Temporary / Testing / Diff files
+test*.pdf
+test*.png
+diff*.txt
+diff*.py
+*.bak
+*.swp
+*.log
 scratch/
-cacert.pem
-
-# Composer
-composer.phar
 
 # IDE / OS Files
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
-*.swp
-*.log
