@@ -3,17 +3,16 @@ import os
 import sqlite3
 import datetime
 import pymupdf  # PyMuPDF
-
 import io
 from PIL import Image
 
 def get_transparent_signature_bytes(image_path):
     try:
         img = Image.open(image_path).convert("RGBA")
-        datas = img.getdata()
+        datas = list(img.getdata())
         newData = []
         for item in datas:
-            # If white or nearly white (or already transparent), make transparent
+            # If transparent or near-white, make transparent
             if item[3] < 10 or (item[0] > 230 and item[1] > 230 and item[2] > 230):
                 newData.append((255, 255, 255, 0))
             else:
@@ -23,8 +22,11 @@ def get_transparent_signature_bytes(image_path):
         img.save(buf, format="PNG")
         return buf.getvalue()
     except Exception:
-        with open(image_path, "rb") as f:
-            return f.read()
+        try:
+            with open(image_path, "rb") as f:
+                return f.read()
+        except Exception:
+            return None
 
 def generate_pdf(token):
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -70,7 +72,7 @@ def generate_pdf(token):
         print(f"ERROR: Database error: {str(e)}", file=sys.stderr)
         sys.exit(1)
         
-    # Prepare form data
+    # Prepare patient details
     patient_name = patient['name'] if patient['name'] else 'Unknown'
     
     # 1. Sex as M / F
@@ -83,65 +85,59 @@ def generate_pdf(token):
         gender_val = gender_raw
         
     form_data = {
-        'Text1': patient_name,
-        'Text2': patient['date_of_birth'],
-        'Text3': gender_val,
-        'Text4': patient['nric'],
-        'Text5': patient['contact_number']
+        'patient_name': patient_name,
+        'patient_sex': gender_val,
+        'patient_nric': patient['nric'],
+        'patient_dob': patient['date_of_birth'],
+        'patient_contact': patient['contact_number'],
+        'patient_address': patient['address'],
+        'patient_postal': patient['postal_code']
     }
     
-    if guardian:
-        form_data['Text38'] = guardian['name']
+    # Guardian / Representative
+    if guardian and guardian['name']:
+        rep_text = guardian['name']
         if guardian['relationship']:
-            form_data['Text38'] += f" ({guardian['relationship']})"
+            rep_text += f" ({guardian['relationship']})"
+        form_data['patient_representative'] = rep_text
         
-    # Map medical answers
-    # Database keys to PDF Question numbers
+    # 2. Medical answers mapping for 14 questions (a to n)
     med_mapping = {
-        'operation': 'Text6',
-        'medication': 'Text12',
-        'allergies': 'Text9',
-        'asthma': 'Text13',
-        'hbp': 'Text14',
-        'diabetes': 'Text15',
-        'depression': 'Text16',
-        'skin': 'Text17',
-        'injuries': 'Text18',
-        'mobility': 'Text19',
-        'heart': 'Text20',
-        'pacemaker': 'Text21',
-        'bleeding': 'Text22',
-        'hiv': 'Text23',
-        'thalassemia': 'Text24',
-        'seizures': 'Text25',
-        'hepatitis': 'Text26',
-        'cancer': 'Text27',
-        'fainting': 'Text28',
-        'pregnant': 'Text29',
-        'irregular_periods': 'Text30'
+        'heart_disease': 'medical_history_q1',
+        'heart': 'medical_history_q1',
+        'pacemaker': 'medical_history_q2',
+        'diabetes': 'medical_history_q3',
+        'high_blood_pressure': 'medical_history_q4',
+        'hbp': 'medical_history_q4',
+        'high_cholesterol': 'medical_history_q5',
+        'cholesterol': 'medical_history_q5',
+        'cancer': 'medical_history_q6',
+        'sensitive_skin': 'medical_history_q7',
+        'skin': 'medical_history_q7',
+        'allergies': 'medical_history_q8',
+        'hiv_aids': 'medical_history_q9',
+        'hiv': 'medical_history_q9',
+        'seizures': 'medical_history_q10',
+        'anti_coagulants': 'medical_history_q11',
+        'anticoagulants': 'medical_history_q11',
+        'operation': 'medical_history_q12',
+        'abnormal_bleeding': 'medical_history_q13',
+        'bleeding': 'medical_history_q13',
+        'currently_pregnant': 'medical_history_q14',
+        'pregnant': 'medical_history_q14'
     }
-    
-    spec_mapping = {
-        'cancer': True,
-        'allergies': True,
-        'operation': True,
-        'medication': True,
-        'others': True
-    }
-
-    specifications = []
 
     for key, row in medical.items():
         ans = row['answer']
-        # If it's a "others" field, we just append to specifications
+        # Handle "others" field
         if key == 'others':
             if row['specification']:
-                specifications.append(row['specification'])
+                form_data['other_conditions'] = row['specification']
             continue
             
         if key in med_mapping:
             field_id = med_mapping[key]
-            # 2. Add Mandarin to Choice (Yes 有 / No 无 / Unsure 不确定)
+            # Bilingual Choice: Yes 有 / No 无 / Unsure 不确定
             if ans == 'Yes':
                 form_data[field_id] = "Yes 有"
             elif ans == 'No':
@@ -151,21 +147,29 @@ def generate_pdf(token):
             else:
                 form_data[field_id] = ans
                 
-            # Handle specification
-            if ans == 'Yes' and key in spec_mapping and row['specification']:
-                specifications.append(f"{key}: {row['specification']}")
-                
-    if specifications:
-        form_data['Text31'] = ", ".join(specifications)
+            # Handle specifications
+            spec = row['specification']
+            if spec:
+                if key == 'cancer':
+                    form_data['cacenr_specify'] = spec
+                    form_data['cancer_specify'] = spec
+                elif key == 'allergies':
+                    form_data['allergies_specify'] = spec
+                elif key == 'operation':
+                    form_data['operation_specify'] = spec
 
-    # Dates
+    # 3. Dates & Practitioner
     if 'patient' in signatures:
-        form_data['Text32'] = signatures['patient']['signed_at'].split(' ')[0]
+        form_data['patient_signature_date'] = signatures['patient']['signed_at'].split(' ')[0]
+        
     if 'practitioner' in signatures:
-        form_data['Text33'] = signatures['practitioner']['signed_at'].split(' ')[0]
-        # Adding physician name from signature row
+        form_data['physician_signature_date'] = signatures['practitioner']['signed_at'].split(' ')[0]
+        form_data['Physician_signature_date'] = signatures['practitioner']['signed_at'].split(' ')[0]
         if signatures['practitioner']['signed_by']:
-            form_data['Text37'] = signatures['practitioner']['signed_by']
+            form_data['physician_name'] = signatures['practitioner']['signed_by']
+
+    # Normalize lookup dictionary for case-insensitivity
+    form_data_lower = {k.lower(): v for k, v in form_data.items()}
 
     try:
         doc = pymupdf.open(template_path)
@@ -173,48 +177,62 @@ def generate_pdf(token):
         for i, page in enumerate(doc):
             widgets_to_delete = []
             for widget in page.widgets():
-                field_name = widget.field_name
-                # 3. Handle Signatures with transparent background
-                if field_name == 'Text35' and 'patient' in signatures:
+                field_name = widget.field_name or ''
+                field_name_clean = field_name.strip()
+                field_name_lower = field_name_clean.lower()
+                
+                # Signatures handling
+                if field_name_lower in ['patient_signature', 'text35', 'patient_signature_area'] and 'patient' in signatures:
                     sig_path = os.path.join(base_dir, '..', 'storage', 'signatures', signatures['patient']['image_path'])
                     if os.path.exists(sig_path):
                         rect = widget.rect
                         sig_bytes = get_transparent_signature_bytes(sig_path)
-                        page.insert_image(rect, stream=sig_bytes)
-                        widgets_to_delete.append(widget)
+                        if sig_bytes:
+                            try:
+                                page.insert_image(rect, stream=sig_bytes)
+                                widgets_to_delete.append(widget)
+                            except Exception as e:
+                                print(f"Warning inserting patient signature: {e}", file=sys.stderr)
                         continue
                         
-                if field_name == 'Text34' and 'practitioner' in signatures:
+                if field_name_lower in ['physician_signature', 'practitioner_signature', 'text34', 'practitioner_signature_area'] and 'practitioner' in signatures:
                     sig_path = os.path.join(base_dir, '..', 'storage', 'signatures', signatures['practitioner']['image_path'])
                     if os.path.exists(sig_path):
                         rect = widget.rect
                         sig_bytes = get_transparent_signature_bytes(sig_path)
-                        page.insert_image(rect, stream=sig_bytes)
-                        widgets_to_delete.append(widget)
+                        if sig_bytes:
+                            try:
+                                page.insert_image(rect, stream=sig_bytes)
+                                widgets_to_delete.append(widget)
+                            except Exception as e:
+                                print(f"Warning inserting practitioner signature: {e}", file=sys.stderr)
                         continue
                 
-                # 3. Handle text fields without background/border
-                if field_name in form_data:
+                # Text fields handling
+                val = None
+                if field_name_clean in form_data:
+                    val = form_data[field_name_clean]
+                elif field_name_lower in form_data_lower:
+                    val = form_data_lower[field_name_lower]
+                    
+                if val is not None:
+                    # Remove border/background fill to prevent covering template lines
                     doc.xref_set_key(widget.xref, 'MK', '<< /R 0 >>')
-                    val = str(form_data[field_name] or '')
-                    widget.field_value = val
+                    widget.field_value = str(val or '')
                     widget.text_font = 'china-s'
-                    # Larger, clearer font size
-                    if field_name == 'Text31':
-                        widget.text_fontsize = 9.5
-                    else:
-                        widget.text_fontsize = 10.5
+                    
+                    # Font size set to 12pt
+                    widget.text_fontsize = 12.0
+                        
                     widget.border_width = 0
                     widget.border_color = None
                     widget.fill_color = None
                     widget.update()
+                    # Make widget visible and printable
                     doc.xref_set_key(widget.xref, 'F', '4')
                         
             for w in widgets_to_delete:
                 page.delete_widget(w)
-            
-            # No manual strikethrough needed since gender is stored in a text field
-
                     
         # Construct filename
         safe_name = "".join([c if c.isalnum() else "_" for c in patient_name])
@@ -222,7 +240,6 @@ def generate_pdf(token):
         filename = f"TCM_Consent_{safe_name}_{timestamp}.pdf"
         output_path = os.path.join(base_dir, '..', 'storage', 'pdf', filename)
         
-        # Generate appearances natively with PyMuPDF instead of relying on viewers
         doc.save(output_path)
         doc.close()
         

@@ -63,42 +63,46 @@ try {
     $history = $_POST['history'] ?? [];
     
     $mapping = [
-        'operation' => 'operation',
-        'medication' => 'medication',
-        'allergies' => 'allergies',
-        'asthma' => 'asthma',
-        'hbp' => 'hbp',
-        'diabetes' => 'diabetes',
-        'depression' => 'depression',
-        'skin' => 'skin',
-        'injuries' => 'injuries',
-        'mobility' => 'mobility',
-        'heart' => 'heart',
+        'heart_disease' => 'heart_disease',
         'pacemaker' => 'pacemaker',
-        'bleeding' => 'bleeding',
-        'hiv' => 'hiv',
-        'thalassemia' => 'thalassemia',
-        'seizures' => 'seizures',
-        'hepatitis' => 'hepatitis',
+        'diabetes' => 'diabetes',
+        'high_blood_pressure' => 'high_blood_pressure',
+        'high_cholesterol' => 'high_cholesterol',
         'cancer' => 'cancer',
-        'fainting' => 'fainting',
-        'pregnant' => 'pregnant',
-        'irregular_periods' => 'irregular_periods'
+        'sensitive_skin' => 'sensitive_skin',
+        'allergies' => 'allergies',
+        'hiv_aids' => 'hiv_aids',
+        'seizures' => 'seizures',
+        'anti_coagulants' => 'anti_coagulants',
+        'operation' => 'operation',
+        'abnormal_bleeding' => 'abnormal_bleeding',
+        'currently_pregnant' => 'currently_pregnant',
+        // Fallback aliases
+        'heart' => 'heart_disease',
+        'hbp' => 'high_blood_pressure',
+        'cholesterol' => 'high_cholesterol',
+        'skin' => 'sensitive_skin',
+        'hiv' => 'hiv_aids',
+        'anticoagulants' => 'anti_coagulants',
+        'bleeding' => 'abnormal_bleeding',
+        'pregnant' => 'currently_pregnant'
     ];
     
     $stmt = $pdo->prepare("INSERT INTO medical_answers (consent_id, question_code, answer, specification) VALUES (?, ?, ?, ?)");
     
+    $processedKeys = [];
     foreach ($mapping as $postKey => $dbKey) {
+        if (in_array($dbKey, $processedKeys)) continue;
         $ans = trim($history[$postKey] ?? '');
         if (!empty($ans)) {
             $spec = '';
             // Handle specification text fields
-            if ($postKey === 'cancer') $spec = trim($_POST['cancer_spec'] ?? '');
-            if ($postKey === 'allergies') $spec = trim($_POST['allergies_spec'] ?? '');
-            if ($postKey === 'operation') $spec = trim($_POST['operation_spec'] ?? '');
-            if ($postKey === 'medication') $spec = trim($_POST['medication_spec'] ?? '');
+            if ($dbKey === 'cancer') $spec = trim($_POST['cancer_spec'] ?? '');
+            if ($dbKey === 'allergies') $spec = trim($_POST['allergies_spec'] ?? '');
+            if ($dbKey === 'operation') $spec = trim($_POST['operation_spec'] ?? '');
             
             $stmt->execute([$consentId, $dbKey, $ans, $spec]);
+            $processedKeys[] = $dbKey;
         }
     }
     
@@ -117,7 +121,7 @@ try {
     // Decode base64 PNG
     list($type, $data) = explode(';', $signatureData);
     list(, $data)      = explode(',', $data);
-    $data = base64_decode($data);
+    $data = base64_decode(str_replace(' ', '+', $data));
     
     if ($data === false) {
         throw new Exception("Invalid signature data.");
@@ -141,7 +145,7 @@ try {
 
     list($type2, $data2) = explode(';', $practitionerSignatureData);
     list(, $data2)       = explode(',', $data2);
-    $data2 = base64_decode($data2);
+    $data2 = base64_decode(str_replace(' ', '+', $data2));
     
     if ($data2 === false) {
         throw new Exception("Invalid practitioner signature data.");

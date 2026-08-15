@@ -538,29 +538,22 @@ if (empty($_SESSION['csrf_token'])) {
                 </thead>
                 <tbody>
                     <?php
-                    // Helper array to generate rows efficiently
+                    // Helper array to generate rows efficiently for the 14 original questions (a to n)
                     $conditions = [
-                        '1' => ['eng' => 'Have you undergone any form of surgery in the past 6 months?', 'chi' => '近6个月内曾动手术', 'id' => 'Pernahkah Anda menjalani operasi dalam 6 bulan terakhir?', 'key' => 'operation', 'spec' => 'operation_spec'],
-                        '2' => ['eng' => 'Are you on any form of medication?', 'chi' => '正在服用药物', 'id' => 'Apakah Anda sedang mengonsumsi obat-obatan?', 'key' => 'medication', 'spec' => 'medication_spec'],
-                        '3' => ['eng' => 'Do you have any drug allergies?', 'chi' => '对任何药物过敏', 'id' => 'Apakah Anda memiliki alergi obat?', 'key' => 'allergies', 'spec' => 'allergies_spec'],
-                        '4' => ['eng' => 'Do you have asthma or any respiratory problems?', 'chi' => '是否有哮喘或其他呼吸道疾病', 'id' => 'Apakah Anda menderita asma atau masalah pernapasan?', 'key' => 'asthma'],
-                        '5' => ['eng' => 'Do you have high blood pressure?', 'chi' => '是否有高血压', 'id' => 'Apakah Anda memiliki tekanan darah tinggi?', 'key' => 'hbp'],
-                        '6' => ['eng' => 'Do you have diabetes?', 'chi' => '是否有糖尿病', 'id' => 'Apakah Anda menderita diabetes?', 'key' => 'diabetes'],
-                        '7' => ['eng' => 'Do you suffer from Depression or Anxiety?', 'chi' => '是否有抑郁症或焦虑症', 'id' => 'Apakah Anda menderita Depresi atau Kecemasan?', 'key' => 'depression'],
-                        '8' => ['eng' => 'Do you have Eczema or any form of skin allergies?', 'chi' => '是否有湿疹或皮肤敏感', 'id' => 'Apakah Anda menderita Eksim atau alergi kulit lainnya?', 'key' => 'skin'],
-                        '9' => ['eng' => 'Do you have any injuries or experience pain in joints, neck, arms, legs and torso?', 'chi' => '是否有任何外伤或关节或任何部位疼痛', 'id' => 'Apakah Anda mengalami cedera atau nyeri pada persendian, leher, lengan, kaki, dan tubuh?', 'key' => 'injuries'],
-                        '10' => ['eng' => 'Do you have any mobility limitations?', 'chi' => '是否有行动或活动不便', 'id' => 'Apakah Anda memiliki keterbatasan gerak?', 'key' => 'mobility'],
-                        '11' => ['eng' => 'Do you have any heart problems?', 'chi' => '是否有心脏疾病', 'id' => 'Apakah Anda memiliki masalah jantung?', 'key' => 'heart'],
-                        '12' => ['eng' => 'Are you currently using a pacemaker?', 'chi' => '是否有植入心脏起搏器', 'id' => 'Apakah Anda menggunakan alat pacu jantung?', 'key' => 'pacemaker'],
-                        '13' => ['eng' => 'Do you have bleeding disorder?', 'chi' => '是否有异常出血', 'id' => 'Apakah Anda memiliki gangguan pendarahan?', 'key' => 'bleeding'],
-                        '14' => ['eng' => 'Do you have HIV/AIDS?', 'chi' => '是否有艾滋病', 'id' => 'Apakah Anda menderita HIV/AIDS?', 'key' => 'hiv'],
-                        '15' => ['eng' => 'Do you have Thalassemia?', 'chi' => '是否有地中海贫血症', 'id' => 'Apakah Anda menderita Thalasemia?', 'key' => 'thalassemia'],
-                        '16' => ['eng' => 'Do you suffer from Seizure/Epilepsy?', 'chi' => '是否有癫痫', 'id' => 'Apakah Anda menderita Kejang/Epilepsi?', 'key' => 'seizures'],
-                        '17' => ['eng' => 'Do you have Hepatitis?', 'chi' => '是否有肝炎', 'id' => 'Apakah Anda menderita Hepatitis?', 'key' => 'hepatitis'],
-                        '18' => ['eng' => 'Do you have any tumour?', 'chi' => '任何部位有肿瘤', 'id' => 'Apakah Anda memiliki tumor?', 'key' => 'cancer', 'spec' => 'cancer_spec'],
-                        '19' => ['eng' => 'Episode of fainting during acupuncture?', 'chi' => '是否发生过针灸晕针的情况', 'id' => 'Pernahkah Anda pingsan saat akupuntur?', 'key' => 'fainting'],
-                        '20' => ['eng' => 'Are you pregnant? (For Women Only)', 'chi' => '是否怀孕 (女性客户)', 'id' => 'Apakah Anda hamil? (Khusus Wanita)', 'key' => 'pregnant'],
-                        '21' => ['eng' => 'Do you have irregular periods? (For Women Only)', 'chi' => '是否有月经不调的问题 (女性客户)', 'id' => 'Apakah menstruasi Anda tidak teratur? (Khusus Wanita)', 'key' => 'irregular_periods'],
+                        'a' => ['eng' => 'Heart diseases', 'chi' => '心脏病', 'id' => 'Penyakit jantung', 'key' => 'heart_disease'],
+                        'b' => ['eng' => 'Implantation of cardiac pacemaker', 'chi' => '装上心脏起搏器', 'id' => 'Pemasangan alat pacu jantung', 'key' => 'pacemaker'],
+                        'c' => ['eng' => 'Diabetes', 'chi' => '糖尿病', 'id' => 'Diabetes / Kencing manis', 'key' => 'diabetes'],
+                        'd' => ['eng' => 'High blood pressure', 'chi' => '高血压', 'id' => 'Tekanan darah tinggi (Hipertensi)', 'key' => 'high_blood_pressure'],
+                        'e' => ['eng' => 'High cholesterol', 'chi' => '高胆固醇', 'id' => 'Kolesterol tinggi', 'key' => 'high_cholesterol'],
+                        'f' => ['eng' => 'Cancer', 'chi' => '癌症', 'id' => 'Kanker', 'key' => 'cancer', 'spec' => 'cancer_spec'],
+                        'g' => ['eng' => 'Sensitive skin', 'chi' => '皮肤敏感', 'id' => 'Kulit sensitif', 'key' => 'sensitive_skin'],
+                        'h' => ['eng' => 'Allergies', 'chi' => '药物过敏', 'id' => 'Alergi obat', 'key' => 'allergies', 'spec' => 'allergies_spec'],
+                        'i' => ['eng' => 'HIV/AIDS', 'chi' => '艾滋病', 'id' => 'HIV/AIDS', 'key' => 'hiv_aids'],
+                        'j' => ['eng' => 'Seizures', 'chi' => '抽搐', 'id' => 'Kejang / Epilepsi', 'key' => 'seizures'],
+                        'k' => ['eng' => 'Consumption of anti-coagulants', 'chi' => '服用血薄药等抗凝血剂', 'id' => 'Konsumsi obat pengencer darah / antikoagulan', 'key' => 'anti_coagulants'],
+                        'l' => ['eng' => 'Operation', 'chi' => '手术', 'id' => 'Operasi / Tindakan bedah', 'key' => 'operation', 'spec' => 'operation_spec'],
+                        'm' => ['eng' => 'Abnormal bleeding', 'chi' => '异常出血', 'id' => 'Pendarahan abnormal', 'key' => 'abnormal_bleeding'],
+                        'n' => ['eng' => 'Currently pregnant (female patients)', 'chi' => '目前怀孕 (女患者)', 'id' => 'Sedang hamil (khusus pasien wanita)', 'key' => 'currently_pregnant'],
                     ];
 
                     foreach ($conditions as $index => $data) {
@@ -912,7 +905,6 @@ if (empty($_SESSION['csrf_token'])) {
         validateSpec('cancer', 'cancer_spec', 'Cancer / 癌症');
         validateSpec('allergies', 'allergies_spec', 'Allergies / 药物过敏');
         validateSpec('operation', 'operation_spec', 'Operation / 手术');
-        validateSpec('medication', 'medication_spec', 'Medication / 药物');
 
         if (hasError) {
             alert(getTranslation('error_title') + errorMessage);
@@ -958,11 +950,9 @@ if (empty($_SESSION['csrf_token'])) {
             name: "John Doe", nric: "S1234567A", address: "123 Orchard Road", postal: "238888", contact: "81234567", sex: "Male", dob: "1990-01-01",
             nokName: "", nokNric: "", nokRel: "",
             history: {
-                operation: "No", medication: "No", allergies: "No", asthma: "No", hbp: "No",
-                diabetes: "No", depression: "No", skin: "No", injuries: "No", mobility: "No",
-                heart: "No", pacemaker: "No", bleeding: "No", hiv: "No", thalassemia: "No",
-                seizures: "No", hepatitis: "No", cancer: "No", fainting: "No", pregnant: "No",
-                irregular_periods: "No"
+                heart_disease: "No", pacemaker: "No", diabetes: "No", high_blood_pressure: "No", high_cholesterol: "No",
+                cancer: "No", sensitive_skin: "No", allergies: "No", hiv_aids: "No", seizures: "No",
+                anti_coagulants: "No", operation: "No", abnormal_bleeding: "No", currently_pregnant: "No"
             },
             other: "None"
         },
@@ -970,11 +960,9 @@ if (empty($_SESSION['csrf_token'])) {
             name: "Jane Smith", nric: "S7654321B", address: "456 Marina Bay", postal: "018980", contact: "98765432", sex: "Female", dob: "2010-05-15",
             nokName: "Mary Smith", nokNric: "S1111111C", nokRel: "Mother",
             history: {
-                operation: "No", medication: "No", allergies: "Yes", asthma: "No", hbp: "No",
-                diabetes: "No", depression: "No", skin: "Yes", injuries: "No", mobility: "No",
-                heart: "No", pacemaker: "No", bleeding: "No", hiv: "No", thalassemia: "No",
-                seizures: "No", hepatitis: "No", cancer: "No", fainting: "No", pregnant: "No",
-                irregular_periods: "No"
+                heart_disease: "No", pacemaker: "No", diabetes: "No", high_blood_pressure: "No", high_cholesterol: "No",
+                cancer: "No", sensitive_skin: "Yes", allergies: "Yes", hiv_aids: "No", seizures: "No",
+                anti_coagulants: "No", operation: "No", abnormal_bleeding: "No", currently_pregnant: "No"
             },
             specs: { allergies_spec: "Penicillin" },
             other: "Asthma"
@@ -983,13 +971,11 @@ if (empty($_SESSION['csrf_token'])) {
             name: "Tan Ah Kow", nric: "S9988776D", address: "789 Jurong East", postal: "609606", contact: "91112222", sex: "Male", dob: "1975-10-20",
             nokName: "Tan May Ling", nokNric: "S2222222E", nokRel: "Wife",
             history: {
-                operation: "Yes", medication: "Yes", allergies: "No", asthma: "No", hbp: "Yes",
-                diabetes: "Yes", depression: "No", skin: "No", injuries: "No", mobility: "No",
-                heart: "Yes", pacemaker: "Yes", bleeding: "No", hiv: "No", thalassemia: "No",
-                seizures: "No", hepatitis: "No", cancer: "Yes", fainting: "No", pregnant: "No",
-                irregular_periods: "No"
+                heart_disease: "Yes", pacemaker: "Yes", diabetes: "Yes", high_blood_pressure: "Yes", high_cholesterol: "Yes",
+                cancer: "Yes", sensitive_skin: "No", allergies: "No", hiv_aids: "No", seizures: "No",
+                anti_coagulants: "Yes", operation: "Yes", abnormal_bleeding: "No", currently_pregnant: "No"
             },
-            specs: { cancer_spec: "Lung cancer", operation_spec: "Heart bypass in 2020", medication_spec: "Aspirin" },
+            specs: { cancer_spec: "Lung cancer", operation_spec: "Heart bypass in 2020" },
             other: "Requires wheelchair"
         }
     ];
@@ -1018,7 +1004,7 @@ if (empty($_SESSION['csrf_token'])) {
                 if (radio) radio.checked = true;
             });
             
-            ['cancer_spec', 'allergies_spec', 'operation_spec', 'medication_spec'].forEach(k => {
+            ['cancer_spec', 'allergies_spec', 'operation_spec'].forEach(k => {
                 const specInput = document.querySelector(`input[name="${k}"]`);
                 if (specInput) specInput.value = '';
             });
