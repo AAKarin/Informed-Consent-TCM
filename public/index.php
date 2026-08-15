@@ -19,6 +19,9 @@ if (empty($_SESSION['csrf_token'])) {
     <!-- Signature Pad library -->
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
     <style>
+        *, *:before, *:after {
+            box-sizing: border-box;
+        }
         body {
             font-family: Arial, "Helvetica Neue", Helvetica, sans-serif, "Microsoft JhengHei", "Microsoft YaHei";
             line-height: 1.4;
@@ -299,12 +302,47 @@ if (empty($_SESSION['csrf_token'])) {
             .inline-field label { margin-bottom: 5px; margin-right: 0; }
             .medical-history-table, .medical-history-table thead, .medical-history-table tbody, .medical-history-table th, .medical-history-table td, .medical-history-table tr { 
                 display: block; 
+                width: 100%;
+                box-sizing: border-box;
             }
             .medical-history-table thead tr { position: absolute; top: -9999px; left: -9999px; }
-            .medical-history-table tr { border: 1px solid #ccc; margin-bottom: 10px; }
-            .medical-history-table td { border: none; border-bottom: 1px solid #eee; position: relative; padding-left: 50%; text-align: left; }
-            .medical-history-table td:before { position: absolute; top: 6px; left: 6px; width: 45%; padding-right: 10px; white-space: nowrap; font-weight: bold; }
-            .medical-history-table td.condition-label { width: 100%; font-weight: bold; background: #eee; padding-left: 15px; }
+            .medical-history-table tr { 
+                border: 1px solid #ccc; 
+                margin-bottom: 12px; 
+                border-radius: 6px; 
+                overflow: hidden; 
+                box-sizing: border-box;
+                background: #fff;
+            }
+            .medical-history-table td { 
+                border: none; 
+                border-bottom: 1px solid #eee; 
+                position: relative; 
+                padding: 10px 12px 10px 50%; 
+                text-align: left; 
+                box-sizing: border-box;
+                width: 100%;
+            }
+            .medical-history-table td:last-child {
+                border-bottom: none;
+            }
+            .medical-history-table td:before { 
+                position: absolute; 
+                top: 10px; 
+                left: 12px; 
+                width: 45%; 
+                padding-right: 10px; 
+                white-space: nowrap; 
+                font-weight: bold; 
+            }
+            .medical-history-table td.condition-label { 
+                width: 100%; 
+                font-weight: bold; 
+                background: #eee; 
+                padding: 10px 12px; 
+                box-sizing: border-box;
+                border-bottom: 1px solid #ddd;
+            }
             .medical-history-table td.condition-label:before { display: none; }
             
             body.lang-mixed .medical-history-table td:nth-of-type(2):before { content: "Yes / 有"; }
