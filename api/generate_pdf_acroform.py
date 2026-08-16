@@ -13,11 +13,19 @@ def get_transparent_signature_bytes(image_path):
         newData = []
         for item in datas:
             # If transparent or near-white, make transparent
-            if item[3] < 10 or (item[0] > 230 and item[1] > 230 and item[2] > 230):
+            if item[3] < 10 or (item[0] > 220 and item[1] > 220 and item[2] > 220):
                 newData.append((255, 255, 255, 0))
             else:
                 newData.append(item)
         img.putdata(newData)
+        
+        # Crop empty whitespace around signature strokes
+        bbox = img.getbbox()
+        if bbox:
+            w, h = img.size
+            crop_box = (max(0, bbox[0]-6), max(0, bbox[1]-6), min(w, bbox[2]+6), min(h, bbox[3]+6))
+            img = img.crop(crop_box)
+            
         buf = io.BytesIO()
         img.save(buf, format="PNG")
         return buf.getvalue()
@@ -31,10 +39,20 @@ def get_transparent_signature_bytes(image_path):
 def generate_pdf(token):
     base_dir = os.path.dirname(os.path.abspath(__file__))
     db_path = os.path.join(base_dir, '..', 'storage', 'consent.db')
-    template_path = os.path.join(base_dir, '..', 'public', 'template', 'sctcm-treatment.pdf')
     
-    if not os.path.exists(template_path):
-        print(f"ERROR: Template not found at {template_path}. Please upload the fillable PDF template.", file=sys.stderr)
+    template_candidates = [
+        os.path.join(base_dir, '..', 'public', 'template', 'sctcm-treatment-template-read-only.pdf'),
+        os.path.join(base_dir, '..', 'public', 'template', 'sctcm-treatment.pdf'),
+        os.path.join(base_dir, '..', 'public', 'template', 'INFORMED-CONSENT.pdf')
+    ]
+    template_path = None
+    for cand in template_candidates:
+        if os.path.exists(cand):
+            template_path = cand
+            break
+            
+    if not template_path:
+        print("ERROR: Template not found in public/template/. Please upload the PDF template.", file=sys.stderr)
         sys.exit(1)
         
     try:
@@ -181,32 +199,10 @@ def generate_pdf(token):
                 field_name_clean = field_name.strip()
                 field_name_lower = field_name_clean.lower()
                 
-                # Signatures handling
-                if field_name_lower in ['patient_signature', 'text35', 'patient_signature_area'] and 'patient' in signatures:
-                    sig_path = os.path.join(base_dir, '..', 'storage', 'signatures', signatures['patient']['image_path'])
-                    if os.path.exists(sig_path):
-                        rect = widget.rect
-                        sig_bytes = get_transparent_signature_bytes(sig_path)
-                        if sig_bytes:
-                            try:
-                                page.insert_image(rect, stream=sig_bytes)
-                                widgets_to_delete.append(widget)
-                            except Exception as e:
-                                print(f"Warning inserting patient signature: {e}", file=sys.stderr)
-                        continue
-                        
-                if field_name_lower in ['physician_signature', 'practitioner_signature', 'text34', 'practitioner_signature_area'] and 'practitioner' in signatures:
-                    sig_path = os.path.join(base_dir, '..', 'storage', 'signatures', signatures['practitioner']['image_path'])
-                    if os.path.exists(sig_path):
-                        rect = widget.rect
-                        sig_bytes = get_transparent_signature_bytes(sig_path)
-                        if sig_bytes:
-                            try:
-                                page.insert_image(rect, stream=sig_bytes)
-                                widgets_to_delete.append(widget)
-                            except Exception as e:
-                                print(f"Warning inserting practitioner signature: {e}", file=sys.stderr)
-                        continue
+                # Delete any signature widgets to avoid field boundaries or SIGN badges
+                if field_name_lower in ['patient_signature', 'physician_signature', 'practitioner_signature', 'text34', 'text35', 'patient_signature_area', 'practitioner_signature_area']:
+                    widgets_to_delete.append(widget)
+                    continue
                 
                 # Text fields handling
                 val = None
@@ -221,9 +217,9 @@ def generate_pdf(token):
                     widget.field_value = str(val or '')
                     widget.text_font = 'china-s'
                     
-                    # Font size set to 12pt
+                    # Font size set to 12pt & Read-Only
                     widget.text_fontsize = 12.0
-                        
+                    widget.field_flags |= pymupdf.PDF_FIELD_IS_READ_ONLY
                     widget.border_width = 0
                     widget.border_color = None
                     widget.fill_color = None
@@ -233,7 +229,46 @@ def generate_pdf(token):
                         
             for w in widgets_to_delete:
                 page.delete_widget(w)
-                    
+
+        # 1. Flatten and bake all form fields and template annotations permanently first
+        if hasattr(doc, 'bake'):
+            doc.bake()
+
+        # 2. Place high-quality transparent signature images directly ON TOP of the baked page
+        if len(doc) >= 2:
+            page2 = doc[1]
+            if 'patient' in signatures:
+                sig_path = os.path.join(base_dir, '..', 'storage', 'signatures', signatures['patient']['image_path'])
+                if os.path.exists(sig_path):
+                    sig_bytes = get_transparent_signature_bytes(sig_path)
+                    if sig_bytes:
+                        try:
+                            # Patient / Representative signature box above the line (y ≈ 585.3)
+                            page2.insert_image(
+                                pymupdf.Rect(50.0, 540.0, 230.0, 583.0),
+                                stream=sig_bytes,
+                                keep_proportion=True,
+                                overlay=True
+                            )
+                        except Exception as e:
+                            print(f"Warning inserting patient signature: {e}", file=sys.stderr)
+
+            if 'practitioner' in signatures:
+                sig_path = os.path.join(base_dir, '..', 'storage', 'signatures', signatures['practitioner']['image_path'])
+                if os.path.exists(sig_path):
+                    sig_bytes = get_transparent_signature_bytes(sig_path)
+                    if sig_bytes:
+                        try:
+                            # Physician signature box above the line (y ≈ 695.8)
+                            page2.insert_image(
+                                pymupdf.Rect(50.0, 650.0, 230.0, 693.0),
+                                stream=sig_bytes,
+                                keep_proportion=True,
+                                overlay=True
+                            )
+                        except Exception as e:
+                            print(f"Warning inserting practitioner signature: {e}", file=sys.stderr)
+            
         # Construct filename
         safe_name = "".join([c if c.isalnum() else "_" for c in patient_name])
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
