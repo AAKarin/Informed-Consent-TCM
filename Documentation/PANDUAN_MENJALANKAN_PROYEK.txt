@@ -1,0 +1,333 @@
+================================================================================
+          PANDUAN LENGKAP PENGGUNAAN & PENGEMBANGAN SISTEM
+       TCM DIGITAL INFORMED CONSENT APP (SIAH AH CHEOK TCM)
+================================================================================
+
+Dokumen ini berisi panduan langkah-demi-langkah bagi Pengguna (User), Staf Klinik, 
+maupun Tim Pengembang (Developer) untuk memasang, menjalankan, menguji, dan 
+memelihara aplikasi Digital Informed Consent TCM.
+
+--------------------------------------------------------------------------------
+DAFTAR ISI:
+--------------------------------------------------------------------------------
+1. RINGKASAN PROYEK & ARSITEKTUR
+2. PRASYARAT SISTEM (SYSTEM REQUIREMENTS)
+3. PANDUAN INSTALASI & PERSIAPAN LINGKUNGAN (SETUP)
+4. CARA MENJALANKAN APLIKASI
+   4.1 Menggunakan PHP Built-in Server (Paling Cepat & Direkomendasikan)
+   4.2 Menggunakan XAMPP (Apache)
+   4.3 Menggunakan Laragon
+   4.4 Cara Akses dari Tablet / iPad / HP di Jaringan Klinik (Local WiFi)
+5. PANDUAN PENGGUNAAN APLIKASI (USER GUIDE)
+   5.1 Pengisian Data Pasien & Wali
+   5.2 Pengisian Kuesioner Riwayat Medis
+   5.3 Persetujuan Tindakan & Klausul Klinis
+   5.4 Pembubuhan Tanda Tangan Digital Pasien & Praktisi
+   5.5 Pengiriman & Pengunduhan Dokumen PDF
+6. STRUKTUR DIREKTORI & PENJELASAN FILE
+7. PANDUAN PEMELIHARAAN & TROUBLESHOOTING (FAQ)
+================================================================================
+
+
+--------------------------------------------------------------------------------
+1. RINGKASAN PROYEK & ARSITEKTUR
+--------------------------------------------------------------------------------
+Aplikasi TCM Digital Informed Consent adalah aplikasi web Single Page Application (SPA) 
+yang dirancang untuk mendigitalkan formulir persetujuan medis (Informed Consent) 
+pada klinik Traditional Chinese Medicine (TCM).
+
+Fitur Utama:
+- Antarmuka Multi-bahasa (Bilingual: Inggris & Mandarin, plus Bahasa Indonesia).
+- Kuesioner Riwayat Kesehatan Terstruktur (14 item pertanyaan medis + spesifikasi).
+- Pengambilan Tanda Tangan Digital (Digital Signature Canvas) untuk Pasien/Wali 
+  dan Praktisi TCM (Physician).
+- Basis Data Lokal SQLite yang mandiri (tanpa perlu instalasi server MySQL/PostgreSQL).
+- Generator PDF Otomatis Berbasis AcroForm & PyMuPDF yang memetakan data langsung 
+  ke dalam template dokumen resmi klinik serta menempelkan tanda tangan beresolusi tinggi 
+  tanpa background putih.
+- PWA Ready (Progressive Web App) dengan Service Worker dan Web Manifest.
+
+
+--------------------------------------------------------------------------------
+2. PRASYARAT SISTEM (SYSTEM REQUIREMENTS)
+--------------------------------------------------------------------------------
+Sebelum menjalankan aplikasi, pastikan perangkat komputer / server telah terpasang:
+
+A. PHP:
+   - Versi: PHP 7.4 atau PHP 8.0 / 8.1 / 8.2 / 8.3+
+   - Ekstensi PHP yang Wajib Aktif:
+     * pdo_sqlite (untuk koneksi SQLite)
+     * sqlite3 (driver SQLite)
+     * mbstring (untuk penanganan karakter multi-byte / teks Mandarin)
+     * fileinfo (opsional)
+
+B. PYTHON:
+   - Versi: Python 3.8 / 3.9 / 3.10 / 3.11 / 3.12 / 3.14+
+   - Modul Python yang Wajib Terpasang:
+     * PyMuPDF (fitz) -> untuk memanipulasi & mengisi form PDF AcroForm
+     * Pillow (PIL)   -> untuk memproses transparansi & cropping tanda tangan
+   - Dapat diinstal dengan perintah:
+     pip install pymupdf pillow
+
+C. PERAMBAN WEB (BROWSER):
+   - Google Chrome, Mozilla Firefox, Microsoft Edge, atau Safari versi terbaru.
+   - Sangat disarankan peramban dengan dukungan layar sentuh (Touch Screen) 
+     jika diakses melalui iPad atau Tablet Android.
+
+
+--------------------------------------------------------------------------------
+3. PANDUAN INSTALASI & PERSIAPAN LINGKUNGAN (SETUP)
+--------------------------------------------------------------------------------
+
+LANGKAH 1: Persiapkan Source Code
+- Buka terminal / command prompt dan masuk ke direktori proyek:
+  cd c:\Users\hawki\Documents\KerjaPraktik\InformedConsentTCM
+  (atau sesuaikan dengan folder letak proyek Anda)
+
+LANGKAH 2: Pastikan Ekstensi SQLite pada PHP Telah Aktif
+- Buka file konfigurasi `php.ini` Anda (misal pada C:\xampp\php\php.ini atau instalasi PHP Anda).
+- Cari baris berikut dan pastikan tanda titik koma (;) di depannya sudah dihapus:
+    extension=pdo_sqlite
+    extension=sqlite3
+    extension=mbstring
+- Simpan file `php.ini`.
+
+LANGKAH 3: Install Modul Python yang Diperlukan
+- Buka terminal / command prompt, lalu jalankan:
+    pip install pymupdf pillow
+- Untuk memastikan modul terpasang dengan benar, jalankan:
+    python -c "import pymupdf, PIL; print('Python dependencies OK!')"
+
+LANGKAH 4: Inisialisasi Database SQLite
+- Jalankan script inisialisasi database melalui terminal di direktori root proyek:
+    php setup/init_db.php
+- Jika berhasil, terminal akan menampilkan pesan:
+    Connected to SQLite database and enabled WAL mode.
+    Successfully created all database tables.
+    Successfully created storage directories.
+- Database akan otomatis dibuat di folder: `storage/consent.db` beserta subfolder:
+  * storage/signatures/ (tempat penyimpanan gambar tanda tangan PNG)
+  * storage/pdf/        (tempat penyimpanan file PDF yang telah digenerate)
+  * storage/logs/       (tempat penyimpanan file log aplikasi)
+
+
+--------------------------------------------------------------------------------
+4. CARA MENJALANKAN APLIKASI
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+4.1 Menggunakan PHP Built-in Server (Metode Paling Cepat & Praktis)
+--------------------------------------------------------------------------------
+Metode ini adalah cara tercepat untuk menjalankan aplikasi tanpa perlu mengonfigurasi Apache.
+
+1. Buka Terminal / PowerShell / Command Prompt.
+2. Arahkan ke root direktori proyek:
+   cd c:\Users\hawki\Documents\KerjaPraktik\InformedConsentTCM
+3. Jalankan perintah server bawaan PHP dengan document root di folder `public`:
+   php -S localhost:8000 -t public
+4. Buka peramban (browser) Anda dan akses:
+   http://localhost:8000
+
+--------------------------------------------------------------------------------
+4.2 Menggunakan XAMPP (Apache)
+--------------------------------------------------------------------------------
+1. Salin atau pindahkan folder proyek `InformedConsentTCM` ke dalam folder:
+   C:\xampp\htdocs\InformedConsentTCM
+2. Buka XAMPP Control Panel dan jalankan module Apache (klik "Start").
+3. Buka browser dan akses melalui URL:
+   http://localhost/InformedConsentTCM/public/
+   (Atau Anda dapat membuat VirtualHost pada `httpd-vhosts.conf` yang mengarahkan 
+    DocumentRoot langsung ke folder `InformedConsentTCM/public`).
+
+--------------------------------------------------------------------------------
+4.3 Menggunakan Laragon
+--------------------------------------------------------------------------------
+1. Tempatkan folder proyek di dalam direktori `C:\laragon\www\InformedConsentTCM`.
+2. Klik "Start All" pada aplikasi Laragon.
+3. Laragon akan otomatis membuat virtual host:
+   http://informedconsenttcm.test/public/
+
+--------------------------------------------------------------------------------
+4.4 Cara Akses dari Tablet / iPad / Smartphone di Jaringan Lokal Klinik (WiFi)
+--------------------------------------------------------------------------------
+Agar pasien atau staf klinik dapat mengisi formulir dan tanda tangan langsung 
+melalui iPad / Tablet / HP di klinik:
+
+1. Pastikan Komputer Server (laptop/PC) dan Tablet/iPad terhubung ke WiFi yang sama.
+2. Cari tahu IP Address lokal komputer server Anda:
+   - Pada Windows: Buka CMD dan ketik `ipconfig` (lihat bagian IPv4 Address, contoh: 192.168.1.50).
+   - Pada Mac/Linux: Buka Terminal dan ketik `ifconfig` atau `ip a`.
+3. Jalankan PHP server dengan bind ke semua interface (0.0.0.0):
+   php -S 0.0.0.0:8000 -t public
+4. Pada browser iPad / Tablet, ketikkan alamat:
+   http://192.168.1.50:8000 (sesuaikan dengan IP komputer Anda).
+5. Formulir siap digunakan secara interaktif di layar sentuh!
+
+
+--------------------------------------------------------------------------------
+5. PANDUAN PENGGUNAAN APLIKASI (USER GUIDE)
+--------------------------------------------------------------------------------
+
+Aplikasi terdiri dari 5 bagian utama yang terstruktur secara berurutan:
+
+5.1 PENGATURAN BAHASA & HEADER
+- Di pojok kanan atau header, pengguna dapat memilih bahasa tampilan:
+  * Bilingual (English + 中文)
+  * English Only
+  * 中文 (Mandarin Only)
+  * Bahasa Indonesia
+
+5.2 SECTION 1: PARTICULARS OF PATIENT (DATA PASIEN)
+- Pasien/staf mengisi informasi identitas:
+  * Patient Name (Nama Lengkap Pasien)
+  * Sex / Gender (Jenis Kelamin: M/F)
+  * NRIC / FIN / Passport No (Nomor Identitas)
+  * Date of Birth (Tanggal Lahir)
+  * Contact No (Nomor Telepon)
+  * Address & Postal Code (Alamat & Kode Pos)
+- Bagian Wali / Representative (Opsional):
+  * Name of Representative / Guardian (Nama Wali)
+  * NRIC of Representative (Nomor Identitas Wali)
+  * Relationship (Hubungan keluarga/wali)
+
+5.3 SECTION 2: MEDICAL HISTORY (RIWAYAT KESEHATAN)
+- Terdapat 14 pertanyaan kesehatan kritis yang wajib dijawab (Pilihan: Yes / No / Unsure):
+  1. Heart Disease (Penyakit Jantung)
+  2. Pacemaker / Cardiac Implants (Alat Pacu Jantung)
+  3. Diabetes (Kencing Manis)
+  4. High Blood Pressure (Tekanan Darah Tinggi)
+  5. High Cholesterol (Kolesterol Tinggi)
+  6. Cancer (Kanker) + Kolom spesifikasi jika 'Yes'
+  7. Sensitive Skin / Keloid Scarring (Kulit Sensitif)
+  8. Allergies (Alergi Obat/Bahan) + Kolom spesifikasi jika 'Yes'
+  9. HIV / AIDS
+  10. Seizures / Epilepsy (Ayan / Kejang)
+  11. Anti-coagulants (Obat Pengencer Darah)
+  12. Previous Operation (Riwayat Operasi) + Kolom spesifikasi jika 'Yes'
+  13. Abnormal Bleeding (Gangguan Pembekuan Darah)
+  14. Currently Pregnant (Sedang Hamil)
+- Kolom "Other Medical Conditions" untuk mencatat kondisi khusus lainnya.
+
+5.4 SECTION 3: INFORMED CONSENT & UNDERTAKING (KLAUSUL PERSETUJUAN)
+- Berisi penjelasan detail dan risiko dari tindakan TCM:
+  * Akupunktur (Acupuncture)
+  * Bekam (Cupping)
+  * Pijat Tradisional (Tuina)
+  * Terapi Panas / Moxibustion
+  * Pengobatan Herbal (Herbal Medicine)
+- Pasien/wali membaca dan mencentang persetujuan atas risiko tindakan.
+
+5.5 SECTION 4: DIGITAL SIGNATURE (TANDA TANGAN DIGITAL)
+- Kanvas Tanda Tangan Pasien / Wali:
+  * Pengguna menandatangani langsung pada kotak kanvas tanda tangan (menggunakan jari, stylus, atau mouse).
+  * Terdapat tombol "Clear" jika ingin mengulang tanda tangan.
+- Kanvas Tanda Tangan Praktisi TCM (Physician Signature):
+  * Dokter / Praktisi TCM mengisi nama dan membubuhkan tanda tangan verifikasi.
+
+5.6 SECTION 5: PENGIRIMAN & CETAK PDF
+- Klik tombol "Submit Consent Form".
+- Sistem akan memvalidasi kelengkapan data, menyimpan ke SQLite database, dan memproses tanda tangan.
+- Setelah berhasil, modal dialog konfirmasi akan muncul dengan tombol:
+  [ View / Download PDF ]
+- Klik tombol tersebut untuk langsung membuka / mengunduh dokumen PDF resmi yang sudah terisi lengkap.
+
+
+--------------------------------------------------------------------------------
+6. STRUKTUR DIREKTORI & PENJELASAN FILE
+--------------------------------------------------------------------------------
+
+InformedConsentTCM/
+│
+├── api/                               -> Core Backend Logic
+│   ├── generate_pdf.php               -> Handler pemanggil script Python PDF & streaming file
+│   ├── generate_pdf_acroform.py       -> Engine Python pengisi PDF template AcroForm & tanda tangan
+│   ├── submit_consent.php             -> Endpoint POST penyimpanan data pasien, riwayat, & tanda tangan
+│   └── submit_practitioner.php        -> Endpoint opsional tanda tangan terpisah oleh praktisi
+│
+├── consent/                           -> Template teks klausul persetujuan
+│   ├── en.php                         -> Klausul bahasa Inggris
+│   └── zh.php                         -> Klausul bahasa Mandarin
+│
+├── lang/                              -> Kamus Terjemahan Antarmuka (i18n)
+│   ├── en.php                         -> Terjemahan Bahasa Inggris
+│   └── zh.php                         -> Terjemahan Bahasa Mandarin
+│
+├── public/                            -> Document Root Web Server (Aset Publik)
+│   ├── api/                           -> Proxy routing API untuk akses publik
+│   │   ├── generate_pdf.php
+│   │   ├── submit_consent.php
+│   │   └── submit_practitioner.php
+│   ├── css/
+│   │   └── style.css                  -> Desain antarmuka responsif
+│   ├── js/
+│   │   └── app.js                     -> Logika frontend, signature pad, validasi, & ajax submit
+│   ├── template/                      -> Template PDF Form Resmi Klinik
+│   │   ├── sctcm-treatment-template-read-only.pdf
+│   │   └── INFORMED-CONSENT.pdf
+│   ├── icon.svg                       -> Ikon aplikasi
+│   ├── manifest.json                  -> Konfigurasi PWA (Progressive Web App)
+│   ├── sw.js                          -> Service Worker untuk caching offline PWA
+│   └── index.php                      -> Halaman utama formulir aplikasi web
+│
+├── setup/                             -> Skrip Utilitas & Instalasi
+│   └── init_db.php                    -> Skrip pembuatan tabel database SQLite & direktori storage
+│
+├── storage/                           -> Tempat Penyimpanan Data Lokal
+│   ├── consent.db                     -> File database SQLite utama
+│   ├── signatures/                    -> File gambar tanda tangan digital (.png)
+│   ├── pdf/                           -> File PDF hasil generate (.pdf)
+│   └── logs/                          -> Log aplikasi (app.log)
+│
+├── Documentation/                     -> Dokumentasi Proyek
+│   ├── Dokumen_Analisis_Kebutuhan_TCM_Consent_App.md
+│   ├── Form_Design_v1.0.1.md
+│   ├── SRS_TCM_Consent_App.md
+│   ├── TODO.md
+│   └── PANDUAN_MENJALANKAN_PROYEK.txt  -> File panduan ini
+│
+├── composer.json                      -> Konfigurasi dependency PHP (opsional)
+└── vercel.json                        -> Konfigurasi deployment serverless (opsional)
+
+
+--------------------------------------------------------------------------------
+7. PANDUAN PEMELIHARAAN & TROUBLESHOOTING (FAQ)
+--------------------------------------------------------------------------------
+
+Q1: Kenapa saat tombol "Download PDF" diklik muncul pesan "Failed to execute python script" atau error 500?
+A1: Penyebab dan Solusi:
+    1. Pastikan Python sudah terpasang dan dapat dipanggil melalui terminal dengan mengetik `python --version`.
+    2. Pastikan paket `pymupdf` dan `pillow` sudah diinstall:
+       pip install pymupdf pillow
+    3. Periksa file log di `storage/logs/app.log` untuk melihat detail pesan kesalahan Python.
+    4. Pastikan file template PDF di `public/template/` tersedia dan tidak terhapus.
+
+Q2: Muncul error "could not find driver" saat menjalankan `php setup/init_db.php`?
+A2: Ekstensi PDO SQLite di PHP belum aktif.
+    Buka `php.ini`, hilangkan tanda titik koma (;) pada baris:
+    extension=pdo_sqlite
+    extension=sqlite3
+    Lalu simpan dan jalankan kembali script setup.
+
+Q3: Bagaimana cara melihat data yang sudah masuk ke database SQLite?
+A3: Anda dapat menggunakan aplikasi visual gratis seperti:
+    - DB Browser for SQLite (https://sqlitebrowser.org/)
+    - Ekstensi "SQLite Viewer" di VS Code
+    Buka file `storage/consent.db` menggunakan aplikasi tersebut untuk melihat 
+    tabel `consent_forms`, `patients`, `guardians`, `medical_answers`, `signatures`, dan `audit_logs`.
+
+Q4: Bagaimana cara membersihkan data uji coba / testing?
+A4: Jika Anda ingin mereset data:
+    1. Hapus file `storage/consent.db`.
+    2. Hapus file-file di dalam `storage/signatures/` dan `storage/pdf/`.
+    3. Jalankan kembali: `php setup/init_db.php`.
+
+Q5: Bagaimana jika aplikasi ingin di-deploy ke server online / hosting?
+A5: Pastikan server hosting Anda:
+    - Mendukung PHP 7.4+ dengan ekstensi SQLite3 aktif.
+    - Memiliki akses eksekusi shell (`shell_exec` aktif di hosting/VPS) dengan Python 3 terinstall.
+    - Pastikan folder `storage/` memiliki hak akses tulis (write permission / chmod 775 atau 777).
+
+================================================================================
+Dibuat untuk Tim Pengembang & Staf Klinik TCM
+Sistem TCM Digital Informed Consent App
+================================================================================
