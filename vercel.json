@@ -1,7 +1,8 @@
 {
   "functions": {
-    "public/index.php": { "runtime": "vercel-community/php" },
-    "api/*.php": { "runtime": "vercel-community/php" }
+    "api/*.php": {
+      "runtime": "vercel-php@0.6.1"
+    }
   },
   "routes": [
     { "src": "/api/(.*)",  "dest": "/api/$1" },
@@ -10,6 +11,6 @@
     { "src": "/manifest.json", "dest": "/public/manifest.json" },
     { "src": "/sw.js", "dest": "/public/sw.js" },
     { "src": "/icon.svg", "dest": "/public/icon.svg" },
-    { "src": "/(.*)", "dest": "/public/index.php" }
+    { "src": "/(.*)", "dest": "/api/index.php" }
   ]
 }

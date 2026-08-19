@@ -1,8 +1,8 @@
 # Vendor / Libraries
 vendor/
-libs/
 composer.phar
 cacert.pem
+
 
 # Python artifacts
 __pycache__/
