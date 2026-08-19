@@ -26,6 +26,8 @@ storage/consent.db
 .env
 .env.local
 .env.*.local
+*.pem
+*.key
 
 # Temporary / Testing / Diff files
 test*.pdf
