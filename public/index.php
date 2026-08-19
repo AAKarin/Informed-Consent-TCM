@@ -1,5 +1,9 @@
 <?php
 session_start();
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Pragma: no-cache");
+header("Expires: 0");
+
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
@@ -1045,7 +1049,7 @@ if (empty($_SESSION['csrf_token'])) {
                         <p>${getTranslation('consent_id')} <strong>${data.token}</strong></p>
                         <div style="margin-top: 20px; display: flex; justify-content: center; gap: 10px;">
                             <a href="../api/generate_pdf.php?token=${data.token}" target="_blank" style="text-decoration: none; background-color: #1b4965; color: white; padding: 10px 20px; border-radius: 6px; font-weight: bold;">${getTranslation('download_pdf')}</a>
-                            <button onclick='window.location.reload()' style='padding: 10px 20px; cursor: pointer; background-color: #64748b; color: white; border: none; border-radius: 6px; font-weight: bold;'>${getTranslation('new_form')}</button>
+                            <button onclick="window.location.href = window.location.pathname + '?reset=' + Date.now()" style='padding: 10px 20px; cursor: pointer; background-color: #64748b; color: white; border: none; border-radius: 6px; font-weight: bold;'>${getTranslation('new_form')}</button>
                         </div>
                     </div>`;
             } else {
@@ -1145,10 +1149,12 @@ if (empty($_SESSION['csrf_token'])) {
         });
     }
 
-    // Register Service Worker for PWA
+    // Register Service Worker for PWA with automatic updates
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
             navigator.serviceWorker.register('./sw.js').then(function(registration) {
+                // Check for updates on every page load
+                registration.update();
                 console.log('ServiceWorker registration successful with scope: ', registration.scope);
             }, function(err) {
                 console.log('ServiceWorker registration failed: ', err);
