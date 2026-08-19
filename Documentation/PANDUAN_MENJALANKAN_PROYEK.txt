@@ -163,6 +163,18 @@ melalui iPad / Tablet / HP di klinik:
    http://192.168.1.50:8000 (sesuaikan dengan IP komputer Anda).
 5. Formulir siap digunakan secara interaktif di layar sentuh!
 
+--------------------------------------------------------------------------------
+4.5 Menggunakan Script Otomatis 1-Klik (start_server.bat & stop_server.bat)
+--------------------------------------------------------------------------------
+Untuk menyederhanakan proses tanpa perlu mengetik perintah secara manual:
+
+1. Klik ganda (Double-click) file `start_server.bat` di folder utama proyek.
+   - Script akan otomatis membersihkan sesi lama.
+   - Script akan otomatis menjalankan PHP Server (localhost:8000) dan Ngrok Tunnel.
+2. Jendela Ngrok akan terbuka dan menampilkan URL publik online.
+3. Untuk menghentikan semua server, cukup klik ganda file `stop_server.bat`.
+
+
 
 --------------------------------------------------------------------------------
 5. PANDUAN PENGGUNAAN APLIKASI (USER GUIDE)
