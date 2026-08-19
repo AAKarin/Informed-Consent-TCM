@@ -112,14 +112,14 @@ try {
     ]);
 
     // 5. Insert into guardians
-    $nokName = trim($_POST['nok_name'] ?? '');
+    $nokName = trim($_POST['nok_name'] ?? $_POST['guardian_name'] ?? $_POST['representative_name'] ?? '');
     if (!empty($nokName)) {
         $stmt = $pdo->prepare("INSERT INTO guardians (consent_id, name, nric, relationship) VALUES (?, ?, ?, ?)");
         $stmt->execute([
             $consentId,
             $nokName,
-            trim($_POST['nok_nric'] ?? ''),
-            trim($_POST['nok_relationship'] ?? '')
+            trim($_POST['nok_nric'] ?? $_POST['guardian_nric'] ?? $_POST['representative_nric'] ?? ''),
+            trim($_POST['nok_relationship'] ?? $_POST['guardian_relationship'] ?? $_POST['representative_relationship'] ?? '')
         ]);
     }
 

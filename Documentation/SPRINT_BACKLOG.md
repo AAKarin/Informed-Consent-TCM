@@ -1,6 +1,6 @@
 # Sprint Backlog - TCM Digital Informed Consent App
-**Sprint:** Sprint 2 (Client Feedback & Usability Refinements)  
-**Status:** In Progress  
+**Sprint:** Sprint 2 (Client Feedback & Usability Refinements - v1.3.0)  
+**Status:** Selesai (Completed ✅)  
 **Tanggal:** 19 Agustus 2026  
 **Target:** Meningkatkan kegunaan (*usability*), keterbacaan untuk pasien lansia, dan efisiensi pengisian form berdasarkan *feedback* langsung dari klien/staf klinik.
 
